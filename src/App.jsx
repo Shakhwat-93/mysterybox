@@ -136,19 +136,19 @@ function App() {
           <CelebrationLayer />
 
           <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 pb-14 pt-8 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:pb-20 lg:pt-12">
-            <div className="hero-reveal flex flex-col justify-center">
-              <div className="mb-5 flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-offer-700 shadow-soft ring-1 ring-orange-100">
+            <div className="hero-reveal flex min-w-0 flex-col items-center justify-center text-center lg:items-start lg:text-left">
+              <div className="mb-5 flex w-full min-w-0 flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap lg:justify-start">
+                <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-white px-4 py-2 text-center text-sm font-bold text-offer-700 shadow-soft ring-1 ring-orange-100">
                   <Zap className="h-4 w-4 fill-offer-500 text-offer-500" />
                   আজকের Flash Offer চলছে
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 ring-1 ring-emerald-100">
+                <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-center text-sm font-bold text-emerald-700 ring-1 ring-emerald-100">
                   <ShieldCheck className="h-4 w-4" />
                   Cash on Delivery
                 </span>
               </div>
 
-              <div className="mb-5 max-w-2xl rounded-[1.65rem] border border-orange-200 bg-white/88 p-4 shadow-soft backdrop-blur sm:p-5">
+              <div className="mb-5 max-w-2xl rounded-[1.65rem] border border-orange-200 bg-white/88 p-4 text-center shadow-soft backdrop-blur sm:p-5">
                 <p className="text-xl font-extrabold leading-snug text-offer-700 sm:text-2xl">
                   চলছে 59-টাকার দারাজ অফিশিয়াল মিস্ট্রি বক্স অফার.!
                 </p>
@@ -160,17 +160,17 @@ function App() {
               <p className="mb-3 text-sm font-bold uppercase tracking-normal text-offer-600">
                 Limited Mystery Drop
               </p>
-              <h1 className="max-w-3xl break-words text-3xl font-extrabold leading-[1.12] tracking-normal text-ink sm:text-5xl lg:text-6xl">
+              <h1 className="max-w-3xl break-words text-[2rem] font-extrabold leading-[1.12] tracking-normal text-ink sm:text-5xl lg:text-6xl">
                 মাত্র <span className="text-offer-600">৫৯ টাকায়</span> Daraz Mystery Box Surprise
               </h1>
-              <p className="mt-5 max-w-2xl text-lg font-medium leading-8 text-zinc-700">
+              <p className="mt-5 max-w-2xl text-base font-medium leading-8 text-zinc-700 sm:text-lg">
                 সারপ্রাইজ প্যাকেট অর্ডার করুন, ঘরে বসে Cash on Delivery-তে রিসিভ করুন।
                 প্রতিটি প্যাকেটে কী থাকবে সেটাই আসল মিস্ট্রি।
               </p>
 
               <Countdown timeLeft={timeLeft} />
 
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-7 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                 <button
                   type="button"
                   onClick={scrollToCheckout}
@@ -191,7 +191,7 @@ function App() {
               </div>
             </div>
 
-            <div className="hero-reveal hero-reveal-delay relative">
+            <div className="hero-reveal hero-reveal-delay relative min-w-0">
               <div className="absolute -right-3 -top-3 z-10 rounded-2xl bg-ink px-4 py-3 text-sm font-black text-white shadow-soft sm:right-4">
                 প্রতি প্যাকেট {bn(PRICE_PER_PACKET)} টাকা
               </div>
@@ -384,7 +384,7 @@ function Countdown({ timeLeft }) {
 
   return (
     <div className="mt-7">
-      <div className="mb-3 flex items-center gap-2 text-sm font-bold text-zinc-600">
+      <div className="mb-3 flex items-center justify-center gap-2 text-sm font-bold text-zinc-600 lg:justify-start">
         <Clock3 className="h-4 w-4 text-offer-600" />
         আজকের অফার শেষ হতে বাকি
       </div>
@@ -434,7 +434,7 @@ function TrustGrid() {
   ];
 
   return (
-    <div className="flex flex-col justify-center">
+    <div className="flex flex-col justify-center text-center lg:text-left">
       <div className="mb-7">
         <p className="text-sm font-bold uppercase tracking-normal text-offer-600">Why order now</p>
         <h2 className="mt-3 text-3xl font-extrabold leading-tight text-ink sm:text-4xl">
@@ -449,10 +449,10 @@ function TrustGrid() {
         {items.map((item, index) => (
           <div
             key={item.title}
-            className="soft-reveal rounded-3xl bg-white p-5 shadow-soft ring-1 ring-zinc-100"
+            className="soft-reveal rounded-3xl bg-white p-5 text-center shadow-soft ring-1 ring-zinc-100 lg:text-left"
             style={{ animationDelay: `${index * 0.04}s` }}
           >
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-offer-600">
+            <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-offer-600 lg:mx-0">
               <item.icon className="h-5 w-5" />
             </div>
             <h3 className="text-lg font-extrabold text-ink">{item.title}</h3>
@@ -483,9 +483,9 @@ function CheckoutForm({
   return (
     <section
       id="checkout"
-      className="soft-reveal scroll-mt-20 rounded-[2rem] bg-white p-4 shadow-premium ring-1 ring-orange-100 sm:p-6 lg:p-7"
+      className="soft-reveal scroll-mt-20 rounded-[2rem] bg-white p-4 text-center shadow-premium ring-1 ring-orange-100 sm:p-6 lg:p-7 lg:text-left"
     >
-      <div className="mb-6 flex flex-col gap-4 border-b border-zinc-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-6 flex flex-col items-center gap-4 border-b border-zinc-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-normal text-offer-700">
             <ShoppingCart className="h-3.5 w-3.5" />
@@ -496,15 +496,15 @@ function CheckoutForm({
             ৭ প্যাকেট স্টক আউট। ৬ অথবা ১০ প্যাকেট সিলেক্ট করে অর্ডার করুন।
           </p>
         </div>
-        <div className="rounded-2xl bg-ink px-4 py-3 text-white">
+        <div className="rounded-2xl bg-ink px-4 py-3 text-center text-white">
           <div className="text-xs font-bold text-orange-100">Total</div>
           <div className="text-2xl font-black">{bn(total)} টাকা</div>
         </div>
       </div>
 
       {submitted ? (
-          <div className="success-reveal rounded-3xl bg-emerald-50 p-6 ring-1 ring-emerald-100">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+          <div className="success-reveal rounded-3xl bg-emerald-50 p-6 text-center ring-1 ring-emerald-100 lg:text-left">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white lg:mx-0">
               <CheckCircle2 className="h-7 w-7" />
             </div>
             <h3 className="mt-5 text-2xl font-extrabold text-emerald-950">অর্ডার তথ্য প্রস্তুত</h3>
@@ -537,7 +537,7 @@ function CheckoutForm({
                       disabled={item.disabled}
                       onClick={() => setSelectedPackage(item.count)}
                       className={[
-                        'relative min-h-[116px] rounded-3xl border p-4 text-left transition focus:outline-none focus:ring-4 focus:ring-orange-100',
+                        'relative min-h-[116px] rounded-3xl border p-4 text-center transition focus:outline-none focus:ring-4 focus:ring-orange-100 sm:text-left',
                         active
                           ? 'border-offer-500 bg-orange-50 shadow-soft'
                           : 'border-zinc-200 bg-white hover:border-orange-200',
@@ -610,7 +610,7 @@ function CheckoutForm({
             <div className="rounded-3xl bg-zinc-50 p-4 ring-1 ring-zinc-100">
               <PriceRow label={`${bn(selectedPackage)} প্যাকেট সাবটোটাল`} value={`${bn(subtotal)} টাকা`} />
               <PriceRow label="ডেলিভারি চার্জ" value={`${bn(DELIVERY_CHARGE)} টাকা`} />
-              <div className="mt-3 flex items-center justify-between border-t border-zinc-200 pt-3">
+              <div className="mt-3 flex items-center justify-between gap-4 border-t border-zinc-200 pt-3 text-left">
                 <span className="text-base font-extrabold text-ink">সর্বমোট</span>
                 <span className="text-2xl font-black text-offer-600">{bn(total)} টাকা</span>
               </div>
@@ -632,7 +632,7 @@ function CheckoutForm({
 function Input({ label, error, ...props }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-extrabold text-ink">{label}</span>
+      <span className="mb-2 block text-center text-sm font-extrabold text-ink sm:text-left">{label}</span>
       <input
         {...props}
         className={[
@@ -648,7 +648,7 @@ function Input({ label, error, ...props }) {
 function Textarea({ label, error, ...props }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-extrabold text-ink">{label}</span>
+      <span className="mb-2 block text-center text-sm font-extrabold text-ink sm:text-left">{label}</span>
       <textarea
         {...props}
         rows={3}
@@ -664,7 +664,7 @@ function Textarea({ label, error, ...props }) {
 
 function PriceRow({ label, value }) {
   return (
-    <div className="flex items-center justify-between py-1.5 text-sm font-bold text-zinc-600">
+    <div className="flex items-center justify-between gap-4 py-1.5 text-left text-sm font-bold text-zinc-600">
       <span>{label}</span>
       <span>{value}</span>
     </div>
@@ -695,7 +695,7 @@ function PolicySection() {
             {policies.map((policy, index) => (
               <div
                 key={policy}
-                className="soft-reveal flex gap-3 rounded-2xl bg-white p-3"
+                className="soft-reveal flex flex-col items-center gap-3 rounded-2xl bg-white p-3 text-center sm:flex-row sm:items-start sm:text-left"
                 style={{ animationDelay: `${index * 0.03}s` }}
               >
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -744,7 +744,7 @@ function FAQSection() {
               key={faq.q}
               className="group rounded-3xl bg-white p-5 shadow-soft ring-1 ring-zinc-100 open:ring-orange-200"
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-extrabold text-ink">
+              <summary className="flex cursor-pointer list-none items-center justify-center gap-4 text-center text-base font-extrabold text-ink sm:justify-between sm:text-left">
                 {faq.q}
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-offer-600 transition group-open:rotate-45">
                   +
