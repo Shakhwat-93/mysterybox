@@ -148,6 +148,15 @@ function App() {
                 </span>
               </div>
 
+              <div className="mb-5 max-w-2xl rounded-[1.65rem] border border-orange-200 bg-white/88 p-4 shadow-soft backdrop-blur sm:p-5">
+                <p className="text-xl font-extrabold leading-snug text-offer-700 sm:text-2xl">
+                  চলছে 59-টাকার দারাজ অফিশিয়াল মিস্ট্রি বক্স অফার.!
+                </p>
+                <p className="mt-2 text-base font-bold leading-7 text-indigo-800 sm:text-lg">
+                  মাত্র ৫৯ টাকায় সেরা সারপ্রাইজটি কি আপনার হবে?
+                </p>
+              </div>
+
               <p className="mb-3 text-sm font-bold uppercase tracking-normal text-offer-600">
                 Limited Mystery Drop
               </p>
