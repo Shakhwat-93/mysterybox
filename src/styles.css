@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700;800;900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -67,6 +65,20 @@ button {
 
 summary::-webkit-details-marker {
   display: none;
+}
+
+.hero-reveal,
+.soft-reveal,
+.success-reveal {
+  animation: premium-reveal 520ms ease both;
+}
+
+.hero-reveal-delay {
+  animation-delay: 90ms;
+}
+
+.success-reveal {
+  animation-duration: 360ms;
 }
 
 .confetti-piece {
@@ -239,6 +251,18 @@ summary::-webkit-details-marker {
   }
 }
 
+@keyframes premium-reveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.985);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
 @keyframes celebration-layer {
   0%,
   78% {
@@ -403,5 +427,11 @@ summary::-webkit-details-marker {
   .entry-celebration,
   .falling-confetti {
     display: none;
+  }
+
+  .hero-reveal,
+  .soft-reveal,
+  .success-reveal {
+    animation: none;
   }
 }

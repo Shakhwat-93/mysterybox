@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import {
   BadgeCheck,
   Box,
@@ -16,7 +15,7 @@ import {
   XCircle,
   Zap,
 } from 'lucide-react';
-import heroImage from '../assets/fdbc90e0-e521-4bce-8472-dc56029a47a9.jpg';
+import heroImage from '../assets/fdbc90e0-e521-4bce-8472-dc56029a47a9.webp';
 
 const TELEGRAM_LINK = 'https://t.me/DarzMysteryBox24';
 const PRICE_PER_PACKET = 59;
@@ -137,12 +136,7 @@ function App() {
           <CelebrationLayer />
 
           <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 pb-14 pt-8 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:pb-20 lg:pt-12">
-            <motion.div
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, ease: 'easeOut' }}
-              className="flex flex-col justify-center"
-            >
+            <div className="hero-reveal flex flex-col justify-center">
               <div className="mb-5 flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-offer-700 shadow-soft ring-1 ring-orange-100">
                   <Zap className="h-4 w-4 fill-offer-500 text-offer-500" />
@@ -186,14 +180,9 @@ function App() {
                   Telegram Support
                 </a>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 18 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
-              className="relative"
-            >
+            <div className="hero-reveal hero-reveal-delay relative">
               <div className="absolute -right-3 -top-3 z-10 rounded-2xl bg-ink px-4 py-3 text-sm font-black text-white shadow-soft sm:right-4">
                 প্রতি প্যাকেট {bn(PRICE_PER_PACKET)} টাকা
               </div>
@@ -201,6 +190,11 @@ function App() {
                 <img
                   src={heroImage}
                   alt="Daraz Mystery Box surprise offer"
+                  width="1024"
+                  height="1024"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
                   className="aspect-square w-full rounded-[1.45rem] object-cover"
                 />
               </div>
@@ -211,7 +205,7 @@ function App() {
                   <MiniStat label="Stock" value="Limited" />
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -444,20 +438,17 @@ function TrustGrid() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {items.map((item, index) => (
-          <motion.div
+          <div
             key={item.title}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.45, delay: index * 0.04 }}
-            className="rounded-3xl bg-white p-5 shadow-soft ring-1 ring-zinc-100"
+            className="soft-reveal rounded-3xl bg-white p-5 shadow-soft ring-1 ring-zinc-100"
+            style={{ animationDelay: `${index * 0.04}s` }}
           >
             <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-offer-600">
               <item.icon className="h-5 w-5" />
             </div>
             <h3 className="text-lg font-extrabold text-ink">{item.title}</h3>
             <p className="mt-2 text-sm leading-6 text-zinc-600">{item.text}</p>
-          </motion.div>
+          </div>
         ))}
       </div>
     </div>
@@ -481,13 +472,9 @@ function CheckoutForm({
   };
 
   return (
-    <motion.section
+    <section
       id="checkout"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.5 }}
-      className="scroll-mt-20 rounded-[2rem] bg-white p-4 shadow-premium ring-1 ring-orange-100 sm:p-6 lg:p-7"
+      className="soft-reveal scroll-mt-20 rounded-[2rem] bg-white p-4 shadow-premium ring-1 ring-orange-100 sm:p-6 lg:p-7"
     >
       <div className="mb-6 flex flex-col gap-4 border-b border-zinc-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -506,15 +493,8 @@ function CheckoutForm({
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        {submitted ? (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            className="rounded-3xl bg-emerald-50 p-6 ring-1 ring-emerald-100"
-          >
+      {submitted ? (
+          <div className="success-reveal rounded-3xl bg-emerald-50 p-6 ring-1 ring-emerald-100">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white">
               <CheckCircle2 className="h-7 w-7" />
             </div>
@@ -531,9 +511,9 @@ function CheckoutForm({
               <Send className="h-5 w-5" />
               Telegram-এ কনফার্ম করুন
             </a>
-          </motion.div>
+          </div>
         ) : (
-          <motion.form key="form" onSubmit={handleSubmit} noValidate className="space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <div>
               <label className="mb-3 block text-sm font-extrabold text-ink">প্যাকেট সিলেক্ট করুন</label>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -634,10 +614,9 @@ function CheckoutForm({
               <ShoppingCart className="h-5 w-5" />
               অর্ডার কনফার্ম করুন
             </button>
-          </motion.form>
+          </form>
         )}
-      </AnimatePresence>
-    </motion.section>
+    </section>
   );
 }
 
@@ -705,19 +684,16 @@ function PolicySection() {
         <div className="rounded-[2rem] bg-white p-5 shadow-soft ring-1 ring-zinc-100 sm:p-8">
           <div className="grid gap-4 sm:grid-cols-2">
             {policies.map((policy, index) => (
-              <motion.div
+              <div
                 key={policy}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.35, delay: index * 0.03 }}
-                className="flex gap-3 rounded-2xl bg-white p-3"
+                className="soft-reveal flex gap-3 rounded-2xl bg-white p-3"
+                style={{ animationDelay: `${index * 0.03}s` }}
               >
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                   <BadgeCheck className="h-4 w-4" />
                 </span>
                 <p className="text-sm font-bold leading-7 text-zinc-700">{policy}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
