@@ -185,90 +185,12 @@ function App() {
       <TopOfferBar text={settings.top_bar_text} />
 
       <main>
-        <section className="relative isolate overflow-hidden border-b border-orange-100 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.18),transparent_32%),linear-gradient(180deg,#fff7ed_0%,#ffffff_74%)]">
-          <CelebrationLayer />
-
-          <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 pb-14 pt-8 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:pb-20 lg:pt-12">
-            <div className="hero-reveal flex min-w-0 flex-col items-center justify-center text-center lg:items-start lg:text-left">
-              <div className="mb-5 flex w-full min-w-0 flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap lg:justify-start">
-                <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-white px-4 py-2 text-center text-sm font-bold text-offer-700 shadow-soft ring-1 ring-orange-100">
-                  <Zap className="h-4 w-4 fill-offer-500 text-offer-500" />
-                  আজকের Flash Offer চলছে
-                </span>
-                <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-center text-sm font-bold text-emerald-700 ring-1 ring-emerald-100">
-                  <ShieldCheck className="h-4 w-4" />
-                  Cash on Delivery
-                </span>
-              </div>
-
-              <div className="mb-5 max-w-2xl rounded-[1.65rem] border border-orange-200 bg-white/88 p-4 text-center shadow-soft backdrop-blur sm:p-5">
-                <p className="text-xl font-extrabold leading-snug text-offer-700 sm:text-2xl">
-                  {settings.highlight_title}
-                </p>
-                <p className="mt-2 text-base font-bold leading-7 text-indigo-800 sm:text-lg">
-                  {settings.highlight_subtitle}
-                </p>
-              </div>
-
-              <p className="mb-3 text-sm font-bold uppercase tracking-normal text-offer-600">
-                Limited Mystery Drop
-              </p>
-              <h1 className="max-w-3xl break-words text-[2rem] font-extrabold leading-[1.12] tracking-normal text-ink sm:text-5xl lg:text-6xl">
-                {settings.hero_title}
-              </h1>
-              <p className="mt-5 max-w-2xl text-base font-medium leading-8 text-zinc-700 sm:text-lg">
-                {settings.hero_description}
-              </p>
-
-              <Countdown timeLeft={timeLeft} />
-
-              <div className="mt-7 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-                <button
-                  type="button"
-                  onClick={scrollToCheckout}
-                  className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-offer-600 px-6 py-4 text-base font-bold text-white shadow-premium transition hover:-translate-y-0.5 hover:bg-offer-700 focus:outline-none focus:ring-4 focus:ring-orange-200"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  এখনই অর্ডার করুন
-                </button>
-                <a
-                  href={telegramMessage}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 text-base font-bold text-ink shadow-soft ring-1 ring-zinc-200 transition hover:-translate-y-0.5 hover:ring-orange-200"
-                >
-                  <MessageCircle className="h-5 w-5 text-offer-600" />
-                  Telegram Support
-                </a>
-              </div>
-            </div>
-
-            <div className="hero-reveal hero-reveal-delay relative min-w-0">
-              <div className="absolute -right-3 -top-3 z-10 rounded-2xl bg-ink px-4 py-3 text-sm font-black text-white shadow-soft sm:right-4">
-                প্রতি প্যাকেট {bn(pricePerPacket)} টাকা
-              </div>
-              <div className="overflow-hidden rounded-[2rem] bg-white p-3 shadow-premium ring-1 ring-orange-100">
-                <img
-                  src={heroImage}
-                  alt="Daraz Mystery Box surprise offer"
-                  width="1024"
-                  height="1024"
-                  loading="eager"
-                  decoding="async"
-                  fetchPriority="high"
-                  className="aspect-square w-full rounded-[1.45rem] object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-5 left-4 right-4 rounded-3xl bg-white p-4 shadow-soft ring-1 ring-orange-100 sm:left-8 sm:right-8">
-          <div className="grid grid-cols-3 gap-2 text-center sm:gap-3">
-                  <MiniStat label="Delivery" value="৯৯ টাকা" />
-                  <MiniStat label="Offer" value="আজই" />
-                  <MiniStat label="Stock" value="Limited" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <ClassicHero
+          settings={settings}
+          timeLeft={timeLeft}
+          telegramMessage={telegramMessage}
+          pricePerPacket={pricePerPacket}
+        />
 
         <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8 lg:py-20">
           <TrustGrid />
@@ -294,6 +216,92 @@ function App() {
       </main>
 
       <MobileStickyCTA onClick={scrollToCheckout} />
+    </div>
+  );
+}
+
+function ClassicHero({ settings, timeLeft, telegramMessage, pricePerPacket }) {
+  return (
+    <section className="classic-hero relative isolate overflow-hidden border-b border-orange-100 bg-[#f7fafc] text-center">
+      <CelebrationLayer />
+
+      <div className="classic-hero-curve bg-offer-600 px-4 pb-20 pt-12 text-white sm:pb-24 sm:pt-16">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="mx-auto max-w-[calc(100vw-32px)] break-words text-2xl font-extrabold leading-tight text-white sm:max-w-[760px] sm:text-4xl lg:text-5xl">
+            {settings.highlight_title}
+          </h1>
+          <p className="mx-auto mt-5 max-w-[calc(100vw-32px)] break-words text-sm font-extrabold leading-7 text-indigo-950 [overflow-wrap:anywhere] sm:max-w-[760px] sm:text-2xl sm:leading-8">
+            {settings.highlight_subtitle}
+          </p>
+        </div>
+      </div>
+
+      <div className="relative mx-auto -mt-14 flex max-w-5xl flex-col items-center px-4 pb-12 sm:-mt-16 sm:px-6">
+        <div className="hero-image-frame w-full max-w-[calc(100vw-32px)] overflow-hidden rounded-lg bg-ink shadow-premium ring-4 ring-white sm:max-w-[520px]">
+          <img
+            src={heroImage}
+            alt="Daraz Mystery Box surprise offer"
+            width="1024"
+            height="1024"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+            className="hero-zoom-image aspect-square w-full object-cover"
+          />
+        </div>
+
+        <ClassicCountdown timeLeft={timeLeft} />
+
+        <a
+          href={telegramMessage}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-7 inline-flex min-h-14 items-center justify-center gap-2 rounded-lg bg-offer-600 px-7 py-4 text-base font-extrabold text-white shadow-[0_0_0_4px_rgba(34,197,94,0.28),0_12px_34px_rgba(234,88,12,0.28)] transition hover:-translate-y-0.5 hover:bg-offer-700"
+        >
+          টেলিগ্রাম চ্যানেলে জয়েন করুন
+          <Send className="h-4 w-4" />
+        </a>
+
+        <div className="mt-12 w-full max-w-[calc(100vw-32px)] rounded-md border border-emerald-500 bg-offer-600 px-4 py-6 text-center text-base font-extrabold leading-8 text-white shadow-soft [overflow-wrap:anywhere] sm:max-w-none sm:text-2xl sm:leading-9">
+          বিঃদ্রঃ-অর্ডার করার আগে অবশ্যই নিচে দেওয়া অর্ডার পলিসি/এবং রিটার্ন পলিসি ভালো করে পড়ে নিবেন
+        </div>
+
+        <button
+          type="button"
+          onClick={() => document.getElementById('checkout')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="mt-8 inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-xl font-extrabold text-ink shadow-[0_0_0_4px_rgba(34,197,94,0.22),0_12px_34px_rgba(20,18,15,0.1)] ring-1 ring-emerald-200 transition hover:-translate-y-0.5"
+        >
+          🎁 অর্ডার পলিসি
+          <ShoppingCart className="h-5 w-5" />
+        </button>
+
+        <p className="mt-5 rounded-full bg-white px-4 py-2 text-sm font-bold text-offer-700 shadow-soft ring-1 ring-orange-100">
+          প্রতি প্যাকেট মাত্র {bn(pricePerPacket)} টাকা
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function ClassicCountdown({ timeLeft }) {
+  const items = [
+    ['দিন', 0],
+    ['ঘন্টা', timeLeft.hours],
+    ['মিনিট', timeLeft.minutes],
+    ['সেকেন্ড', timeLeft.seconds],
+  ];
+
+  return (
+    <div className="mt-6 grid w-full max-w-[360px] grid-cols-4 gap-1 sm:max-w-[590px] sm:gap-4">
+      {items.map(([label, value]) => (
+        <div
+          key={label}
+          className="min-w-0 rounded-md bg-offer-600 px-0.5 py-3 text-center text-white shadow-[0_0_0_2px_rgba(99,102,241,0.22),0_10px_22px_rgba(234,88,12,0.2)] ring-1 ring-orange-300 sm:px-2"
+        >
+          <div className="text-2xl font-black leading-none sm:text-6xl">{bn(String(value).padStart(2, '0'))}</div>
+          <div className="mt-2 text-[10px] font-extrabold text-ink sm:text-xl">{label}</div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -336,7 +344,6 @@ function EntryCelebration() {
 
   return (
     <div aria-hidden="true" className="entry-celebration pointer-events-none fixed inset-0 z-[70] overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-orange-50/45 via-white/10 to-transparent" />
       <div className="celebration-side celebration-left">
         {Array.from({ length: 56 }).map((_, index) => (
           <span
@@ -492,7 +499,7 @@ function TrustGrid() {
     <div className="flex flex-col justify-center text-center lg:text-left">
       <div className="mb-7">
         <p className="text-sm font-bold uppercase tracking-normal text-offer-600">Why order now</p>
-        <h2 className="mt-3 text-3xl font-extrabold leading-tight text-ink sm:text-4xl">
+        <h2 className="mt-3 break-words text-2xl font-extrabold leading-tight text-ink sm:text-4xl">
           অফারটা সহজ, পরিষ্কার, আর অর্ডার করতে একদম দ্রুত।
         </h2>
         <p className="mt-4 text-base leading-7 text-zinc-600">
