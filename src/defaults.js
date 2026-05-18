@@ -1,7 +1,7 @@
 export const defaultSettings = {
   id: 'main',
   top_bar_text: 'আজকের Flash Offer চলছে - প্রতি প্যাকেট মাত্র ৫৯ টাকা',
-  highlight_title: 'চলছে 59-টাকার দারাজ অফিশিয়াল মিস্ট্রি বক্স অফার.!',
+  highlight_title: 'চলছে 59-টাকার অফিশিয়াল মিস্ট্রি বক্স অফার.!',
   highlight_subtitle: 'মাত্র ৫৯ টাকায় সেরা সারপ্রাইজটি কি আপনার হবে?',
   hero_title: 'মাত্র ৫৯ টাকায় Daraz Mystery Box Surprise',
   hero_description:

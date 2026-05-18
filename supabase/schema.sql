@@ -3,7 +3,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.site_settings (
   id text primary key default 'main',
   top_bar_text text not null default 'আজকের Flash Offer চলছে - প্রতি প্যাকেট মাত্র ৫৯ টাকা',
-  highlight_title text not null default 'চলছে 59-টাকার দারাজ অফিশিয়াল মিস্ট্রি বক্স অফার.!',
+  highlight_title text not null default 'চলছে 59-টাকার অফিশিয়াল মিস্ট্রি বক্স অফার.!',
   highlight_subtitle text not null default 'মাত্র ৫৯ টাকায় সেরা সারপ্রাইজটি কি আপনার হবে?',
   hero_title text not null default 'মাত্র ৫৯ টাকায় Daraz Mystery Box Surprise',
   hero_description text not null default 'সারপ্রাইজ প্যাকেট অর্ডার করুন, ঘরে বসে Cash on Delivery-তে রিসিভ করুন। প্রতিটি প্যাকেটে কী থাকবে সেটাই আসল মিস্ট্রি।',
