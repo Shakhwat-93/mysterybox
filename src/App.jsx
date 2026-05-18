@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  ArrowLeft,
   BadgeCheck,
   CheckCircle2,
   Clock3,
@@ -64,6 +65,7 @@ function getTimeLeft() {
 
 function getCurrentRoute() {
   if (window.location.pathname.replace(/\/$/, '') === '/admin') return '/admin';
+  if (window.location.pathname.replace(/\/$/, '') === '/success') return '/success';
   return window.location.hash;
 }
 
@@ -79,7 +81,6 @@ function App() {
     address: '',
   });
   const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     const onRouteChange = () => setRoute(getCurrentRoute());
@@ -125,6 +126,10 @@ function App() {
 
   if (route === '/admin' || route === '#/admin') {
     return <AdminPanel />;
+  }
+
+  if (route === '/success') {
+    return <OrderSuccessPage />;
   }
 
   const pricePerPacket = Number(settings.price_per_packet || defaultSettings.price_per_packet);
@@ -183,7 +188,9 @@ function App() {
       }
     }
 
-    setSubmitted(true);
+    window.history.pushState(null, '', '/success');
+    setRoute('/success');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -213,9 +220,7 @@ function App() {
             form={form}
             setForm={setForm}
             errors={errors}
-            submitted={submitted}
             handleSubmit={handleSubmit}
-            telegramMessage={telegramMessage}
           />
         </section>
 
@@ -536,9 +541,7 @@ function CheckoutForm({
   form,
   setForm,
   errors,
-  submitted,
   handleSubmit,
-  telegramMessage,
 }) {
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -566,26 +569,6 @@ function CheckoutForm({
         </div>
       </div>
 
-      {submitted ? (
-          <div className="success-reveal rounded-3xl bg-emerald-50 p-6 text-center ring-1 ring-emerald-100 lg:text-left">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white lg:mx-0">
-              <CheckCircle2 className="h-7 w-7" />
-            </div>
-            <h3 className="mt-5 text-2xl font-extrabold text-emerald-950">অর্ডার তথ্য প্রস্তুত</h3>
-            <p className="mt-3 leading-7 text-emerald-900">
-              আপনার অর্ডার ডিটেইলস নেওয়া হয়েছে। দ্রুত কনফার্মেশনের জন্য Telegram-এ যোগাযোগ করুন।
-            </p>
-            <a
-              href={telegramMessage}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-offer-600 px-5 py-4 text-base font-bold text-white shadow-premium transition hover:bg-offer-700 sm:w-auto"
-            >
-              <Send className="h-5 w-5" />
-              Telegram-এ কনফার্ম করুন
-            </a>
-          </div>
-        ) : (
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <div>
               <label className="mb-3 block text-sm font-extrabold text-ink">প্যাকেট সিলেক্ট করুন</label>
@@ -696,8 +679,38 @@ function CheckoutForm({
             </button>
             {errors.submit ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">{errors.submit}</p> : null}
           </form>
-        )}
     </section>
+  );
+}
+
+function OrderSuccessPage() {
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-[#fff8f3] text-ink">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4 py-10 text-center sm:px-6">
+        <div className="success-reveal w-full overflow-hidden rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-orange-100 sm:p-10">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-offer-600 ring-1 ring-orange-100">
+            <CheckCircle2 className="h-10 w-10" />
+          </div>
+          <p className="mt-6 text-sm font-extrabold uppercase tracking-normal text-offer-600">Order Received</p>
+          <h1 className="mx-auto mt-3 max-w-[19rem] break-words text-[28px] font-extrabold leading-tight text-ink sm:max-w-sm sm:text-5xl">
+            আপনার অর্ডার সফলভাবে নেওয়া হয়েছে
+          </h1>
+          <p className="mx-auto mt-5 max-w-[20rem] break-all text-base font-bold leading-8 text-zinc-700 sm:max-w-xl sm:break-words sm:text-lg">
+            ধন্যবাদ। আমাদের টিম দ্রুত আপনার দেওয়া মোবাইল নাম্বারে কল করে অর্ডার কনফার্মেশন এবং ডেলিভারি ডিটেইলস জানিয়ে দেবে।
+          </p>
+          <div className="mx-auto mt-7 max-w-[20rem] break-all rounded-3xl bg-orange-50 p-4 text-sm font-bold leading-7 text-offer-700 ring-1 ring-orange-100 sm:max-w-xl sm:break-words sm:text-base">
+            অনুগ্রহ করে ফোনটি চালু রাখুন। অর্ডার কনফার্ম হলে পার্সেল ডেলিভারির জন্য প্রস্তুত করা হবে।
+          </div>
+          <a
+            href="/"
+            className="mx-auto mt-8 inline-flex min-h-14 w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-offer-600 px-5 py-4 text-base font-extrabold text-white shadow-premium transition hover:-translate-y-0.5 hover:bg-offer-700 sm:w-auto"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            ওয়েবসাইটে ফিরে যান
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }
 
