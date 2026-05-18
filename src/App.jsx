@@ -60,6 +60,16 @@ function createOrderId() {
   });
 }
 
+function scrollToSection(sectionId) {
+  document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function preventContentCopy(event) {
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+  event.preventDefault();
+}
+
 function getTimeLeft() {
   const now = new Date();
   const midnight = new Date(now);
@@ -226,7 +236,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white text-ink">
+    <div className="min-h-screen select-none overflow-x-hidden bg-white text-ink" onCopy={preventContentCopy}>
       <EntryCelebration />
       <FallingConfetti />
       <TopOfferBar text={settings.top_bar_text} />
@@ -309,7 +319,23 @@ function ClassicHero({ settings, timeLeft, telegramMessage }) {
         </a>
 
         <div className="mt-12 w-full max-w-[calc(100vw-32px)] rounded-md border border-emerald-500 bg-offer-600 px-4 py-5 text-center text-base font-extrabold leading-8 text-white shadow-soft [overflow-wrap:anywhere] sm:max-w-none sm:text-xl sm:leading-9">
-          বিঃদ্রঃ-অর্ডার করার আগে নিচের অর্ডার পলিসি এবং রিটার্ন পলিসি ভালো করে পড়ে নিবেন
+          বিঃদ্রঃ-অর্ডার করার আগে নিচের{' '}
+          <button
+            type="button"
+            onClick={() => scrollToSection('order-policy')}
+            className="inline-flex cursor-pointer items-center justify-center rounded-md px-1 font-black text-white underline decoration-white/70 underline-offset-4 transition hover:text-orange-100 focus:outline-none focus:ring-2 focus:ring-white/70"
+          >
+            অর্ডার পলিসি
+          </button>{' '}
+          এবং{' '}
+          <button
+            type="button"
+            onClick={() => scrollToSection('return-policy')}
+            className="inline-flex cursor-pointer items-center justify-center rounded-md px-1 font-black text-white underline decoration-white/70 underline-offset-4 transition hover:text-orange-100 focus:outline-none focus:ring-2 focus:ring-white/70"
+          >
+            রিটার্ন পলিসি
+          </button>{' '}
+          ভালো করে পড়ে নিবেন
         </div>
       </div>
     </section>
@@ -717,7 +743,7 @@ function CheckoutForm({
 
 function OrderSuccessPage() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#fff8f3] text-ink">
+    <div className="min-h-screen select-none overflow-x-hidden bg-[#fff8f3] text-ink" onCopy={preventContentCopy}>
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4 py-10 text-center sm:px-6">
         <div className="success-reveal w-full overflow-hidden rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-orange-100 sm:p-10">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-offer-600 ring-1 ring-orange-100">
@@ -753,7 +779,7 @@ function Input({ label, error, ...props }) {
       <input
         {...props}
         className={[
-          'min-h-13 w-full rounded-2xl border bg-white px-4 py-3 text-base font-semibold text-ink outline-none transition placeholder:text-zinc-400 focus:border-offer-500 focus:ring-4 focus:ring-orange-100',
+          'min-h-13 w-full select-text rounded-2xl border bg-white px-4 py-3 text-base font-semibold text-ink outline-none transition placeholder:text-zinc-400 focus:border-offer-500 focus:ring-4 focus:ring-orange-100',
           error ? 'border-red-300' : 'border-zinc-200',
         ].join(' ')}
       />
@@ -770,7 +796,7 @@ function Textarea({ label, error, ...props }) {
         {...props}
         rows={3}
         className={[
-          'w-full resize-none rounded-2xl border bg-white px-4 py-3 text-base font-semibold text-ink outline-none transition placeholder:text-zinc-400 focus:border-offer-500 focus:ring-4 focus:ring-orange-100',
+          'w-full resize-none select-text rounded-2xl border bg-white px-4 py-3 text-base font-semibold text-ink outline-none transition placeholder:text-zinc-400 focus:border-offer-500 focus:ring-4 focus:ring-orange-100',
           error ? 'border-red-300' : 'border-zinc-200',
         ].join(' ')}
       />
@@ -800,7 +826,7 @@ function PolicySection({ compact = false }) {
   ];
 
   return (
-    <section className={compact ? '' : 'bg-zinc-50 py-14 sm:py-20'}>
+    <section id="order-policy" className={compact ? 'scroll-mt-6 sm:scroll-mt-8' : 'scroll-mt-6 bg-zinc-50 py-14 sm:scroll-mt-8 sm:py-20'}>
       <div className={compact ? '' : 'mx-auto max-w-5xl px-4 sm:px-6 lg:px-8'}>
         <div className="mb-5 text-center">
           <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-xl font-extrabold text-ink shadow-[0_0_0_4px_rgba(34,197,94,0.18),0_10px_30px_rgba(20,18,15,0.08)] ring-1 ring-emerald-200">
@@ -838,7 +864,7 @@ function ReturnPolicySection() {
   ];
 
   return (
-    <section>
+    <section id="return-policy" className="scroll-mt-6 sm:scroll-mt-8">
       <div className="mb-5 text-center">
         <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-xl font-extrabold text-white shadow-[0_0_0_4px_rgba(14,165,233,0.16),0_10px_30px_rgba(2,132,199,0.2)]">
           <ShoppingCart className="h-5 w-5" />
