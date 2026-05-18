@@ -16,13 +16,13 @@ Premium Bangla-first React landing page for a Daraz Mystery Box flash offer.
 - Bangla typography with polished font hierarchy
 - Entry celebration animation and falling confetti
 - Countdown offer section
-- 6/7/10 packet selector with 7 packet disabled as stock out
+- 6/7/10 packet selector with visual selection indicator
 - Live subtotal, delivery charge, and total calculation
 - Bangladeshi phone number validation
-- Order success state with Telegram support CTA
+- Dedicated order success page
 - Supabase-backed content, order, and stock management
-- Admin panel at `/#/admin`
-- Mobile sticky order button
+- Admin panel at `/admin`
+- Admin-managed Meta Pixel, GTM, and Meta CAPI tracking setup
 - Vercel-ready build setup
 
 ## Local Development
@@ -51,7 +51,10 @@ Add these environment variables in Vercel:
 ```bash
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 ```
+
+`SUPABASE_SERVICE_ROLE_KEY` is server-only and is required for `/api/pixel-config` and `/api/meta-capi`. Do not expose it in client-side variables.
 
 ## Supabase Setup
 
@@ -63,8 +66,9 @@ It creates:
 - `package_options`
 - `orders`
 - `profiles`
+- `pixel_settings`
 - RLS policies for public landing page reads and order creation
-- Admin-only content, stock, and order management policies
+- Admin-only content, stock, order, and pixel credential management policies
 
 After creating an admin user in Supabase Auth, mark that user as admin:
 

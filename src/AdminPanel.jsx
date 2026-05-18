@@ -18,11 +18,23 @@ import { isSupabaseConfigured, supabase } from './lib/supabase';
 const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'content', label: 'Content', icon: Settings },
+  { id: 'pixel', label: 'Pixel Setup', icon: Settings },
   { id: 'stock', label: 'Stock', icon: Boxes },
   { id: 'orders', label: 'Orders', icon: ShoppingBag },
 ];
 
 const orderStatuses = ['pending', 'confirmed', 'delivered', 'cancelled'];
+
+const defaultPixelSettings = {
+  id: 'main',
+  meta_pixel_enabled: false,
+  meta_pixel_id: '',
+  meta_capi_enabled: false,
+  meta_access_token: '',
+  meta_test_event_code: '',
+  gtm_enabled: false,
+  gtm_container_id: '',
+};
 
 function AdminPanel() {
   const [session, setSession] = useState(null);
@@ -34,6 +46,7 @@ function AdminPanel() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
   const [settings, setSettings] = useState(defaultSettings);
+  const [pixelSettings, setPixelSettings] = useState(defaultPixelSettings);
   const [packages, setPackages] = useState(defaultPackages);
   const [orders, setOrders] = useState([]);
   const [newPackage, setNewPackage] = useState({
@@ -115,17 +128,19 @@ function AdminPanel() {
 
     setProfile(profileData);
 
-    const [settingsResult, packagesResult, ordersResult] = await Promise.all([
+    const [settingsResult, pixelResult, packagesResult, ordersResult] = await Promise.all([
       supabase.from('site_settings').select('*').eq('id', 'main').maybeSingle(),
+      supabase.from('pixel_settings').select('*').eq('id', 'main').maybeSingle(),
       supabase.from('package_options').select('*').order('display_order', { ascending: true }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(200),
     ]);
 
     if (settingsResult.data) setSettings({ ...defaultSettings, ...settingsResult.data });
+    if (pixelResult.data) setPixelSettings({ ...defaultPixelSettings, ...pixelResult.data });
     if (packagesResult.data?.length) setPackages(packagesResult.data);
     if (ordersResult.data) setOrders(ordersResult.data);
 
-    const firstError = settingsResult.error || packagesResult.error || ordersResult.error;
+    const firstError = settingsResult.error || pixelResult.error || packagesResult.error || ordersResult.error;
     if (firstError) setNotice(firstError.message);
 
     setLoading(false);
@@ -150,6 +165,22 @@ function AdminPanel() {
     const { error } = await supabase.from('site_settings').upsert({ ...settings, id: 'main' });
     setSaving(false);
     setNotice(error ? error.message : 'Content settings saved.');
+  };
+
+  const savePixelSettings = async () => {
+    setSaving(true);
+    setNotice('');
+    const payload = {
+      ...pixelSettings,
+      id: 'main',
+      meta_pixel_id: String(pixelSettings.meta_pixel_id || '').trim(),
+      meta_access_token: String(pixelSettings.meta_access_token || '').trim(),
+      meta_test_event_code: String(pixelSettings.meta_test_event_code || '').trim(),
+      gtm_container_id: String(pixelSettings.gtm_container_id || '').trim(),
+    };
+    const { error } = await supabase.from('pixel_settings').upsert(payload);
+    setSaving(false);
+    setNotice(error ? error.message : 'Pixel settings saved.');
   };
 
   const updatePackage = async (item, patch) => {
@@ -279,6 +310,9 @@ function AdminPanel() {
           {activeTab === 'overview' ? <Overview stats={stats} settings={settings} /> : null}
           {activeTab === 'content' ? (
             <ContentEditor settings={settings} setSettings={setSettings} onSave={saveSettings} saving={saving} />
+          ) : null}
+          {activeTab === 'pixel' ? (
+            <PixelSetup settings={pixelSettings} setSettings={setPixelSettings} onSave={savePixelSettings} saving={saving} />
           ) : null}
           {activeTab === 'stock' ? (
             <StockManager
@@ -416,6 +450,92 @@ function ContentEditor({ settings, setSettings, onSave, saving }) {
         {saving ? 'Saving...' : 'Save Content'}
       </button>
     </div>
+  );
+}
+
+function PixelSetup({ settings, setSettings, onSave, saving }) {
+  const update = (key, value) => setSettings({ ...settings, [key]: value });
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-[2rem] bg-white p-5 shadow-soft ring-1 ring-zinc-100 sm:p-6">
+        <p className="text-sm font-bold uppercase text-offer-600">Tracking</p>
+        <h2 className="mt-2 text-2xl font-extrabold">Pixel Setup</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+          Meta Pixel, Meta CAPI and GTM credentials save korle full website tracking active hobe. Access token browser-e expose hobe na.
+        </p>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <ToggleField
+            label="Enable Meta Pixel"
+            checked={settings.meta_pixel_enabled}
+            onChange={(value) => update('meta_pixel_enabled', value)}
+          />
+          <ToggleField
+            label="Enable Meta CAPI"
+            checked={settings.meta_capi_enabled}
+            onChange={(value) => update('meta_capi_enabled', value)}
+          />
+          <TextField label="Meta Pixel ID" value={settings.meta_pixel_id} onChange={(value) => update('meta_pixel_id', value)} placeholder="123456789012345" />
+          <TextField label="Meta CAPI Access Token" type="password" value={settings.meta_access_token} onChange={(value) => update('meta_access_token', value)} placeholder="EAAB..." />
+          <TextField label="Meta Test Event Code" value={settings.meta_test_event_code} onChange={(value) => update('meta_test_event_code', value)} placeholder="TEST12345" />
+          <ToggleField
+            label="Enable Google Tag Manager"
+            checked={settings.gtm_enabled}
+            onChange={(value) => update('gtm_enabled', value)}
+          />
+          <TextField label="GTM Container ID" value={settings.gtm_container_id} onChange={(value) => update('gtm_container_id', value)} placeholder="GTM-XXXXXXX" />
+        </div>
+
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-2xl bg-offer-600 px-5 py-3 font-bold text-white disabled:opacity-60"
+        >
+          <Save className="h-4 w-4" />
+          {saving ? 'Saving...' : 'Save Pixel Setup'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ToggleField({ label, checked, onChange }) {
+  return (
+    <label className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-200 p-4 text-sm font-bold text-ink">
+      {label}
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={[
+          'relative h-8 w-14 rounded-full transition',
+          checked ? 'bg-offer-600' : 'bg-zinc-200',
+        ].join(' ')}
+        aria-pressed={checked}
+      >
+        <span
+          className={[
+            'absolute top-1 h-6 w-6 rounded-full bg-white shadow transition',
+            checked ? 'left-7' : 'left-1',
+          ].join(' ')}
+        />
+      </button>
+    </label>
+  );
+}
+
+function TextField({ label, value, onChange, type = 'text', placeholder }) {
+  return (
+    <label className="block text-sm font-bold text-ink">
+      {label}
+      <input
+        type={type}
+        value={value ?? ''}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="mt-2 w-full rounded-2xl border border-zinc-200 px-4 py-3 outline-none focus:border-offer-500 focus:ring-4 focus:ring-orange-100"
+      />
+    </label>
   );
 }
 

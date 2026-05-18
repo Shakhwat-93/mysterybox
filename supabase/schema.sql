@@ -39,6 +39,18 @@ create table if not exists public.orders (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.pixel_settings (
+  id text primary key default 'main',
+  meta_pixel_enabled boolean not null default false,
+  meta_pixel_id text not null default '',
+  meta_capi_enabled boolean not null default false,
+  meta_access_token text not null default '',
+  meta_test_event_code text not null default '',
+  gtm_enabled boolean not null default false,
+  gtm_container_id text not null default '',
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.decrement_package_stock()
 returns trigger
 language plpgsql
@@ -74,6 +86,10 @@ insert into public.site_settings (id)
 values ('main')
 on conflict (id) do nothing;
 
+insert into public.pixel_settings (id)
+values ('main')
+on conflict (id) do nothing;
+
 insert into public.package_options (packet_count, label, badge, stock_quantity, is_available, display_order)
 values
   (6, '৬ প্যাকেট', 'Popular', 100, true, 1),
@@ -85,6 +101,7 @@ alter table public.site_settings enable row level security;
 alter table public.package_options enable row level security;
 alter table public.orders enable row level security;
 alter table public.profiles enable row level security;
+alter table public.pixel_settings enable row level security;
 
 grant select on public.site_settings to anon, authenticated;
 grant select on public.package_options to anon, authenticated;
@@ -93,6 +110,7 @@ grant select, update, delete on public.orders to authenticated;
 grant select, insert, update, delete on public.site_settings to authenticated;
 grant select, insert, update, delete on public.package_options to authenticated;
 grant select, insert, update, delete on public.profiles to authenticated;
+grant select, insert, update, delete on public.pixel_settings to authenticated;
 grant usage, select on all sequences in schema public to anon, authenticated;
 
 create or replace function public.is_admin()
@@ -157,6 +175,12 @@ using (auth.uid() = id or public.is_admin());
 drop policy if exists "Admins can manage profiles" on public.profiles;
 create policy "Admins can manage profiles"
 on public.profiles for all
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "Admins can manage pixel settings" on public.pixel_settings;
+create policy "Admins can manage pixel settings"
+on public.pixel_settings for all
 using (public.is_admin())
 with check (public.is_admin());
 

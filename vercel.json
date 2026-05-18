@@ -5,7 +5,7 @@
       "destination": "/index.html"
     },
     {
-      "source": "/:path*",
+      "source": "/((?!api/|assets/|favicon.ico|robots.txt).*)",
       "destination": "/index.html"
     }
   ]

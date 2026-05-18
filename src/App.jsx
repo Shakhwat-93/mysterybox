@@ -20,6 +20,7 @@ import heroImage from '../assets/fdbc90e0-e521-4bce-8472-dc56029a47a9.webp';
 import AdminPanel from './AdminPanel';
 import { defaultPackages, defaultSettings } from './defaults';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
+import { createEventId, initializeTracking, trackPurchase } from './lib/tracking';
 
 const banglaDigits = new Map([
   ['0', '০'],
@@ -48,6 +49,15 @@ function toEnglishDigits(value) {
     .split('')
     .map((digit) => englishDigits.get(digit) ?? digit)
     .join('');
+}
+
+function createOrderId() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = character === 'x' ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
 function getTimeLeft() {
@@ -101,6 +111,10 @@ function App() {
     const timer = window.setInterval(() => setTimeLeft(getTimeLeft()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    initializeTracking();
+  }, [route]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -171,10 +185,15 @@ function App() {
       return;
     }
 
+    const normalizedPhone = toEnglishDigits(form.phone).replace(/\s|-/g, '');
+    const orderId = createOrderId();
+    const trackingEventId = createEventId('purchase');
+
     if (isSupabaseConfigured) {
       const { error } = await supabase.from('orders').insert({
+        id: orderId,
         customer_name: form.name.trim(),
-        phone: toEnglishDigits(form.phone).replace(/\s|-/g, ''),
+        phone: normalizedPhone,
         address: form.address.trim(),
         package_count: selectedPackage,
         subtotal,
@@ -187,6 +206,19 @@ function App() {
         return;
       }
     }
+
+    await trackPurchase({
+      eventId: trackingEventId,
+      orderId,
+      packageCount: selectedPackage,
+      subtotal,
+      deliveryCharge,
+      total,
+      customer: {
+        name: form.name.trim(),
+        phone: normalizedPhone,
+      },
+    });
 
     window.history.pushState(null, '', '/success');
     setRoute('/success');
