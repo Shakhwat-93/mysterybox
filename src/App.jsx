@@ -193,7 +193,7 @@ function App() {
         />
 
         <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8 lg:py-20">
-          <TrustGrid />
+          <PolicySection compact />
           <CheckoutForm
             packages={packages}
             pricePerPacket={pricePerPacket}
@@ -211,7 +211,10 @@ function App() {
           />
         </section>
 
-        <PolicySection />
+        <section className="mx-auto w-full max-w-7xl px-4 pb-14 sm:px-6 lg:px-8 lg:pb-20">
+          <TrustGrid />
+        </section>
+
         <FAQSection />
       </main>
 
@@ -262,18 +265,9 @@ function ClassicHero({ settings, timeLeft, telegramMessage, pricePerPacket }) {
           <Send className="h-4 w-4" />
         </a>
 
-        <div className="mt-12 w-full max-w-[calc(100vw-32px)] rounded-md border border-emerald-500 bg-offer-600 px-4 py-6 text-center text-base font-extrabold leading-8 text-white shadow-soft [overflow-wrap:anywhere] sm:max-w-none sm:text-2xl sm:leading-9">
-          বিঃদ্রঃ-অর্ডার করার আগে অবশ্যই নিচে দেওয়া অর্ডার পলিসি/এবং রিটার্ন পলিসি ভালো করে পড়ে নিবেন
+        <div className="mt-12 w-full max-w-[calc(100vw-32px)] rounded-md border border-emerald-500 bg-offer-600 px-4 py-5 text-center text-base font-extrabold leading-8 text-white shadow-soft [overflow-wrap:anywhere] sm:max-w-none sm:text-xl sm:leading-9">
+          বিঃদ্রঃ-অর্ডার করার আগে নিচের অর্ডার পলিসি ভালো করে পড়ে নিবেন
         </div>
-
-        <button
-          type="button"
-          onClick={() => document.getElementById('checkout')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          className="mt-8 inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-xl font-extrabold text-ink shadow-[0_0_0_4px_rgba(34,197,94,0.22),0_12px_34px_rgba(20,18,15,0.1)] ring-1 ring-emerald-200 transition hover:-translate-y-0.5"
-        >
-          🎁 অর্ডার পলিসি
-          <ShoppingCart className="h-5 w-5" />
-        </button>
 
         <p className="mt-5 rounded-full bg-white px-4 py-2 text-sm font-bold text-offer-700 shadow-soft ring-1 ring-orange-100">
           প্রতি প্যাকেট মাত্র {bn(pricePerPacket)} টাকা
@@ -343,7 +337,7 @@ function EntryCelebration() {
   const symbols = ['✦', '✺', '✧', '✹'];
 
   return (
-    <div aria-hidden="true" className="entry-celebration pointer-events-none fixed inset-0 z-[70] overflow-hidden">
+    <div aria-hidden="true" className="entry-celebration pointer-events-none fixed inset-0 z-10 overflow-hidden">
       <div className="celebration-side celebration-left">
         {Array.from({ length: 56 }).map((_, index) => (
           <span
@@ -737,7 +731,7 @@ function PriceRow({ label, value }) {
   );
 }
 
-function PolicySection() {
+function PolicySection({ compact = false }) {
   const policies = [
     'সম্পূর্ণ Cash on Delivery-তে অর্ডার করতে পারবেন।',
     'সর্বনিম্ন ৬/৭/১০ প্যাকেট অর্ডার করতে হবে।',
@@ -749,25 +743,27 @@ function PolicySection() {
   ];
 
   return (
-    <section className="bg-zinc-50 py-14 sm:py-20">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 text-center">
-          <p className="text-sm font-bold uppercase tracking-normal text-offer-600">Order Policy</p>
-          <h2 className="mt-3 text-3xl font-extrabold text-ink sm:text-4xl">অর্ডার করার আগে জেনে নিন</h2>
+    <section className={compact ? '' : 'bg-zinc-50 py-14 sm:py-20'}>
+      <div className={compact ? '' : 'mx-auto max-w-5xl px-4 sm:px-6 lg:px-8'}>
+        <div className="mb-5 text-center">
+          <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-xl font-extrabold text-ink shadow-[0_0_0_4px_rgba(34,197,94,0.18),0_10px_30px_rgba(20,18,15,0.08)] ring-1 ring-emerald-200">
+            🎁 অর্ডার পলিসি
+            <ShoppingCart className="h-5 w-5" />
+          </span>
         </div>
 
-        <div className="rounded-[2rem] bg-white p-5 shadow-soft ring-1 ring-zinc-100 sm:p-8">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-md border border-orange-300 bg-offer-600 p-5 shadow-soft">
+          <div className="space-y-3">
             {policies.map((policy, index) => (
               <div
                 key={policy}
-                className="soft-reveal flex flex-col items-center gap-3 rounded-2xl bg-white p-3 text-center sm:flex-row sm:items-start sm:text-left"
+                className="soft-reveal flex items-start gap-3 text-left"
                 style={{ animationDelay: `${index * 0.03}s` }}
               >
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <BadgeCheck className="h-4 w-4" />
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-white">
+                  <BadgeCheck className="h-3.5 w-3.5" />
                 </span>
-                <p className="text-sm font-bold leading-7 text-zinc-700">{policy}</p>
+                <p className="text-sm font-bold leading-6 text-white sm:text-base">{policy}</p>
               </div>
             ))}
           </div>
