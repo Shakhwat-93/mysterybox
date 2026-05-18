@@ -23,6 +23,7 @@ Premium Bangla-first React landing page for a Daraz Mystery Box flash offer.
 - Supabase-backed content, order, and stock management
 - Admin panel at `/admin`
 - Admin-managed Meta Pixel, GTM, and Meta CAPI tracking setup
+- Server-side duplicate order guard by device/IP with admin-adjustable block days
 - Vercel-ready build setup
 
 ## Local Development
@@ -54,7 +55,7 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` is server-only and is required for `/api/pixel-config` and `/api/meta-capi`. Do not expose it in client-side variables.
+`SUPABASE_SERVICE_ROLE_KEY` is server-only and is required for `/api/pixel-config`, `/api/meta-capi`, and `/api/create-order`. Do not expose it in client-side variables.
 
 ## Supabase Setup
 
@@ -67,7 +68,7 @@ It creates:
 - `orders`
 - `profiles`
 - `pixel_settings`
-- RLS policies for public landing page reads and order creation
+- RLS policies for public landing page reads, admin management, and locked-down server-side order creation
 - Admin-only content, stock, order, and pixel credential management policies
 
 After creating an admin user in Supabase Auth, mark that user as admin:

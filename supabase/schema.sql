@@ -10,6 +10,7 @@ create table if not exists public.site_settings (
   telegram_link text not null default 'https://t.me/DarzMysteryBox24',
   price_per_packet integer not null default 59 check (price_per_packet >= 0),
   delivery_charge integer not null default 99 check (delivery_charge >= 0),
+  order_block_days integer not null default 15 check (order_block_days >= 0),
   updated_at timestamptz not null default now()
 );
 
@@ -34,10 +35,20 @@ create table if not exists public.orders (
   subtotal integer not null,
   delivery_charge integer not null,
   total integer not null,
+  device_hash text,
+  ip_hash text,
   status text not null default 'pending' check (status in ('pending', 'confirmed', 'delivered', 'cancelled')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create index if not exists orders_device_hash_created_at_idx
+on public.orders (device_hash, created_at desc)
+where device_hash is not null;
+
+create index if not exists orders_ip_hash_created_at_idx
+on public.orders (ip_hash, created_at desc)
+where ip_hash is not null;
 
 create table if not exists public.pixel_settings (
   id text primary key default 'main',
@@ -105,8 +116,8 @@ alter table public.pixel_settings enable row level security;
 
 grant select on public.site_settings to anon, authenticated;
 grant select on public.package_options to anon, authenticated;
-grant insert on public.orders to anon, authenticated;
-grant select, update, delete on public.orders to authenticated;
+revoke insert on public.orders from anon, authenticated;
+grant select, insert, update, delete on public.orders to authenticated;
 grant select, insert, update, delete on public.site_settings to authenticated;
 grant select, insert, update, delete on public.package_options to authenticated;
 grant select, insert, update, delete on public.profiles to authenticated;
@@ -149,17 +160,6 @@ using (public.is_admin())
 with check (public.is_admin());
 
 drop policy if exists "Anyone can create orders" on public.orders;
-create policy "Anyone can create orders"
-on public.orders for insert
-with check (
-  exists (
-    select 1
-    from public.package_options
-    where public.package_options.packet_count = public.orders.package_count
-      and is_available = true
-      and stock_quantity > 0
-  )
-);
 
 drop policy if exists "Admins can manage orders" on public.orders;
 create policy "Admins can manage orders"

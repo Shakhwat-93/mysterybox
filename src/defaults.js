@@ -9,6 +9,7 @@ export const defaultSettings = {
   telegram_link: 'https://t.me/DarzMysteryBox24',
   price_per_packet: 59,
   delivery_charge: 99,
+  order_block_days: 15,
 };
 
 export const defaultPackages = [

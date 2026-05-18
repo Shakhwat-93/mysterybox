@@ -51,13 +51,26 @@ function toEnglishDigits(value) {
     .join('');
 }
 
-function createOrderId() {
+function createUuid() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
     const random = Math.floor(Math.random() * 16);
     const value = character === 'x' ? random : (random & 0x3) | 0x8;
     return value.toString(16);
   });
+}
+
+function getDeviceId() {
+  const storageKey = 'mysterybox_device_id';
+  try {
+    const existing = window.localStorage.getItem(storageKey);
+    if (existing) return existing;
+    const next = createUuid();
+    window.localStorage.setItem(storageKey, next);
+    return next;
+  } catch {
+    return createUuid();
+  }
 }
 
 function scrollToSection(sectionId) {
@@ -101,6 +114,8 @@ function App() {
     address: '',
   });
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [duplicateNotice, setDuplicateNotice] = useState('');
 
   useEffect(() => {
     const onRouteChange = () => setRoute(getCurrentRoute());
@@ -190,40 +205,49 @@ function App() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setDuplicateNotice('');
 
     if (!validate()) {
       return;
     }
 
     const normalizedPhone = toEnglishDigits(form.phone).replace(/\s|-/g, '');
-    const orderId = createOrderId();
     const trackingEventId = createEventId('purchase');
+    setSubmitting(true);
 
-    if (isSupabaseConfigured) {
-      const { error } = await supabase.from('orders').insert({
-        id: orderId,
-        customer_name: form.name.trim(),
+    const response = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: form.name.trim(),
         phone: normalizedPhone,
         address: form.address.trim(),
-        package_count: selectedPackage,
-        subtotal,
-        delivery_charge: deliveryCharge,
-        total,
-      });
+        packageCount: selectedPackage,
+        deviceId: getDeviceId(),
+      }),
+    }).then((result) => result.json()).catch(() => ({ ok: false, error: 'অর্ডার সাবমিট করা যায়নি। আবার চেষ্টা করুন।' }));
 
-      if (error) {
-        setErrors({ submit: error.message });
+    setSubmitting(false);
+
+    if (!response.ok) {
+      if (response.blocked) {
+        setDuplicateNotice(response.message || 'আপনি ইতিমধ্যে একটি অর্ডার দিয়েছেন।');
         return;
       }
+
+      setErrors({ submit: response.error || 'অর্ডার সাবমিট করা যায়নি। আবার চেষ্টা করুন।' });
+      return;
     }
+
+    const order = response.order || {};
 
     await trackPurchase({
       eventId: trackingEventId,
-      orderId,
-      packageCount: selectedPackage,
-      subtotal,
-      deliveryCharge,
-      total,
+      orderId: order.id,
+      packageCount: Number(order.package_count || selectedPackage),
+      subtotal: Number(order.subtotal || subtotal),
+      deliveryCharge: Number(order.delivery_charge || deliveryCharge),
+      total: Number(order.total || total),
       customer: {
         name: form.name.trim(),
         phone: normalizedPhone,
@@ -263,6 +287,7 @@ function App() {
             setForm={setForm}
             errors={errors}
             handleSubmit={handleSubmit}
+            submitting={submitting}
           />
         </section>
 
@@ -272,6 +297,8 @@ function App() {
 
         <FAQSection />
       </main>
+
+      <DuplicateOrderModal message={duplicateNotice} onClose={() => setDuplicateNotice('')} />
     </div>
   );
 }
@@ -600,6 +627,7 @@ function CheckoutForm({
   setForm,
   errors,
   handleSubmit,
+  submitting,
 }) {
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -730,14 +758,53 @@ function CheckoutForm({
 
             <button
               type="submit"
-              className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-offer-600 px-5 py-4 text-base font-bold text-white shadow-premium transition hover:-translate-y-0.5 hover:bg-offer-700 focus:outline-none focus:ring-4 focus:ring-orange-200"
+              disabled={submitting}
+              className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-offer-600 px-5 py-4 text-base font-bold text-white shadow-premium transition hover:-translate-y-0.5 hover:bg-offer-700 focus:outline-none focus:ring-4 focus:ring-orange-200 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
             >
               <ShoppingCart className="h-5 w-5" />
-              অর্ডার কনফার্ম করুন
+              {submitting ? 'অর্ডার প্রসেস হচ্ছে...' : 'অর্ডার কনফার্ম করুন'}
             </button>
             {errors.submit ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">{errors.submit}</p> : null}
           </form>
     </section>
+  );
+}
+
+function DuplicateOrderModal({ message, onClose }) {
+  if (!message) return null;
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/55 px-4 py-6 backdrop-blur-sm">
+      <div className="success-reveal w-full max-w-md overflow-hidden rounded-[2rem] bg-white p-5 text-center shadow-premium ring-1 ring-orange-100 sm:p-7">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-orange-50 text-offer-600 ring-1 ring-orange-100">
+          <XCircle className="h-9 w-9" />
+        </div>
+        <h2 className="mt-5 text-2xl font-extrabold leading-8 text-ink">ডুপ্লিকেট অর্ডার ব্লক করা হয়েছে</h2>
+        <div className="mt-4 rounded-3xl bg-orange-50 p-4 text-sm font-bold leading-7 text-zinc-800 ring-1 ring-orange-100">
+          {message.split('\n').map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <a
+            href="https://wa.me/8801853864664"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-extrabold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-emerald-700"
+          >
+            <MessageCircle className="h-4 w-4" />
+            WhatsApp
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-offer-600 px-4 py-3 text-sm font-extrabold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-offer-700"
+          >
+            ঠিক আছে
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { createServiceClient, json, setCors } from './_supabase.js';
+import { createServiceClient, getClientIp, json, setCors } from './_supabase.js';
 
 const GRAPH_VERSION = 'v25.0';
 
@@ -53,8 +53,7 @@ export default async function handler(req, res) {
     const orderId = requestedCustomData.order_id;
     const customer = body.customer || {};
     const userAgent = req.headers['user-agent'];
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const ipAddress = Array.isArray(forwardedFor) ? forwardedFor[0] : String(forwardedFor || '').split(',')[0].trim();
+    const ipAddress = getClientIp(req);
 
     if (!orderId) {
       json(res, 400, { ok: false, error: 'Missing order_id.' });

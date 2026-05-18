@@ -25,3 +25,10 @@ export function setCors(res) {
 export function json(res, status, payload) {
   res.status(status).json(payload);
 }
+
+export function getClientIp(req) {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  const realIp = req.headers['x-real-ip'];
+  const value = Array.isArray(forwardedFor) ? forwardedFor[0] : String(forwardedFor || realIp || '');
+  return value.split(',')[0].trim();
+}

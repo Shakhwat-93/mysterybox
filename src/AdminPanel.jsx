@@ -409,6 +409,7 @@ function ContentEditor({ settings, setSettings, onSave, saving }) {
     ['telegram_link', 'Telegram Link'],
     ['price_per_packet', 'Price Per Packet'],
     ['delivery_charge', 'Delivery Charge'],
+    ['order_block_days', 'Duplicate Order Block Days'],
   ];
 
   return (
@@ -427,12 +428,12 @@ function ContentEditor({ settings, setSettings, onSave, saving }) {
               />
             ) : (
               <input
-                type={key.includes('price') || key.includes('charge') ? 'number' : 'text'}
+                type={key.includes('price') || key.includes('charge') || key.includes('days') ? 'number' : 'text'}
                 value={settings[key] ?? ''}
                 onChange={(event) =>
                   setSettings({
                     ...settings,
-                    [key]: key.includes('price') || key.includes('charge') ? Number(event.target.value) : event.target.value,
+                    [key]: key.includes('price') || key.includes('charge') || key.includes('days') ? Number(event.target.value) : event.target.value,
                   })
                 }
                 className="mt-2 w-full rounded-2xl border border-zinc-200 px-4 py-3 outline-none focus:border-offer-500 focus:ring-4 focus:ring-orange-100"
