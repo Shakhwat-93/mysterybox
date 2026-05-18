@@ -77,7 +77,6 @@ function App() {
     name: '',
     phone: '',
     address: '',
-    note: '',
   });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -172,7 +171,6 @@ function App() {
         customer_name: form.name.trim(),
         phone: toEnglishDigits(form.phone).replace(/\s|-/g, ''),
         address: form.address.trim(),
-        note: form.note.trim() || null,
         package_count: selectedPackage,
         subtotal,
         delivery_charge: deliveryCharge,
@@ -666,13 +664,6 @@ function CheckoutForm({
               onChange={(event) => updateField('address', event.target.value)}
               error={errors.address}
               placeholder="জেলা, থানা, এলাকা, বাসা/রোড নাম্বার"
-            />
-
-            <Textarea
-              label="নোট (ঐচ্ছিক)"
-              value={form.note}
-              onChange={(event) => updateField('note', event.target.value)}
-              placeholder="ডেলিভারি সময় বা বিশেষ নির্দেশনা"
             />
 
             <div className="rounded-3xl bg-zinc-50 p-4 ring-1 ring-zinc-100">
