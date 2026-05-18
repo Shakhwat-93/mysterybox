@@ -197,10 +197,9 @@ function App() {
           settings={settings}
           timeLeft={timeLeft}
           telegramMessage={telegramMessage}
-          pricePerPacket={pricePerPacket}
         />
 
-        <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8 lg:py-20">
+        <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[0.92fr_1.08fr] lg:px-8 lg:py-12">
           <PolicySection compact />
           <ReturnPolicySection />
           <CheckoutForm
@@ -230,7 +229,7 @@ function App() {
   );
 }
 
-function ClassicHero({ settings, timeLeft, telegramMessage, pricePerPacket }) {
+function ClassicHero({ settings, timeLeft, telegramMessage }) {
   return (
     <section className="classic-hero relative isolate overflow-hidden border-b border-orange-100 bg-[#f7fafc] text-center">
       <CelebrationLayer />
@@ -246,7 +245,7 @@ function ClassicHero({ settings, timeLeft, telegramMessage, pricePerPacket }) {
         </div>
       </div>
 
-      <div className="relative mx-auto -mt-14 flex max-w-5xl flex-col items-center px-4 pb-12 sm:-mt-16 sm:px-6">
+      <div className="relative mx-auto -mt-14 flex max-w-5xl flex-col items-center px-4 pb-6 sm:-mt-16 sm:px-6 sm:pb-8">
         <div className="hero-image-frame w-full max-w-[calc(100vw-32px)] overflow-hidden rounded-lg bg-ink shadow-premium ring-4 ring-white sm:max-w-[520px]">
           <img
             src={heroImage}
@@ -275,10 +274,6 @@ function ClassicHero({ settings, timeLeft, telegramMessage, pricePerPacket }) {
         <div className="mt-12 w-full max-w-[calc(100vw-32px)] rounded-md border border-emerald-500 bg-offer-600 px-4 py-5 text-center text-base font-extrabold leading-8 text-white shadow-soft [overflow-wrap:anywhere] sm:max-w-none sm:text-xl sm:leading-9">
           বিঃদ্রঃ-অর্ডার করার আগে নিচের অর্ডার পলিসি ভালো করে পড়ে নিবেন
         </div>
-
-        <p className="mt-5 rounded-full bg-white px-4 py-2 text-sm font-bold text-offer-700 shadow-soft ring-1 ring-orange-100">
-          প্রতি প্যাকেট মাত্র {bn(pricePerPacket)} টাকা
-        </p>
       </div>
     </section>
   );
