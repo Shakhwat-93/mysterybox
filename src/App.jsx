@@ -499,13 +499,16 @@ function TrustGrid() {
   return (
     <div className="flex flex-col justify-center text-center lg:text-left">
       <div className="mb-7">
-        <p className="text-sm font-bold uppercase tracking-normal text-offer-600">Why order now</p>
-        <h2 className="mt-3 break-words text-2xl font-extrabold leading-tight text-ink sm:text-4xl">
-          অফারটা সহজ, পরিষ্কার, আর অর্ডার করতে একদম দ্রুত।
-        </h2>
-        <p className="mt-4 text-base leading-7 text-zinc-600">
-          অপ্রয়োজনীয় জটিলতা নেই। প্যাকেট সিলেক্ট করুন, ঠিকানা দিন, তারপর অর্ডার কনফার্ম করুন।
-        </p>
+        <div className="mx-auto max-w-2xl rounded-3xl bg-ink px-5 py-7 text-center text-white shadow-premium ring-1 ring-black/10 sm:px-8 sm:py-8 lg:mx-0">
+          <p className="text-2xl font-extrabold leading-9 sm:text-3xl">সতর্ক বার্তা ✍️✍️✍️</p>
+          <p className="mt-4 break-words text-xl font-extrabold leading-9 [overflow-wrap:anywhere] sm:text-2xl sm:leading-10">
+            Mystery Box মানে আপনার ভাগ্যের পরীক্ষা!
+          </p>
+          <p className="mt-3 break-words text-lg font-bold leading-8 text-white/90 [overflow-wrap:anywhere] sm:text-xl">
+            সম্পূর্ণ টাকা পরিশোধ করে পণ্যটি আনবক্স করবেন,
+          </p>
+          <p className="mt-4 text-2xl font-extrabold leading-9">ধন্যবাদ 💗</p>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
