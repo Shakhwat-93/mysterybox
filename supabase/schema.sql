@@ -77,7 +77,7 @@ on conflict (id) do nothing;
 insert into public.package_options (packet_count, label, badge, stock_quantity, is_available, display_order)
 values
   (6, '৬ প্যাকেট', 'Popular', 100, true, 1),
-  (7, '৭ প্যাকেট', 'স্টক আউট', 0, false, 2),
+  (7, '৭ প্যাকেট', 'Available', 100, true, 2),
   (10, '১০ প্যাকেট', 'Best Value', 100, true, 3)
 on conflict (packet_count) do nothing;
 

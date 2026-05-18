@@ -13,6 +13,6 @@ export const defaultSettings = {
 
 export const defaultPackages = [
   { packet_count: 6, label: '৬ প্যাকেট', badge: 'Popular', stock_quantity: 100, is_available: true, display_order: 1 },
-  { packet_count: 7, label: '৭ প্যাকেট', badge: 'স্টক আউট', stock_quantity: 0, is_available: false, display_order: 2 },
+  { packet_count: 7, label: '৭ প্যাকেট', badge: 'Available', stock_quantity: 100, is_available: true, display_order: 2 },
   { packet_count: 10, label: '১০ প্যাকেট', badge: 'Best Value', stock_quantity: 100, is_available: true, display_order: 3 },
 ];
