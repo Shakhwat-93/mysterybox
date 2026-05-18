@@ -309,7 +309,7 @@ function ClassicHero({ settings, timeLeft, telegramMessage }) {
         </a>
 
         <div className="mt-12 w-full max-w-[calc(100vw-32px)] rounded-md border border-emerald-500 bg-offer-600 px-4 py-5 text-center text-base font-extrabold leading-8 text-white shadow-soft [overflow-wrap:anywhere] sm:max-w-none sm:text-xl sm:leading-9">
-          বিঃদ্রঃ-অর্ডার করার আগে নিচের অর্ডার পলিসি ভালো করে পড়ে নিবেন
+          বিঃদ্রঃ-অর্ডার করার আগে নিচের অর্ডার পলিসি এবং রিটার্ন পলিসি ভালো করে পড়ে নিবেন
         </div>
       </div>
     </section>
