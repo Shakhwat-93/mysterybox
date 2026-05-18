@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   BadgeCheck,
-  Box,
   CheckCircle2,
   Clock3,
   Gift,
@@ -189,10 +188,6 @@ function App() {
     setSubmitted(true);
   };
 
-  const scrollToCheckout = () => {
-    document.getElementById('checkout')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-ink">
       <EntryCelebration />
@@ -233,8 +228,6 @@ function App() {
 
         <FAQSection />
       </main>
-
-      <MobileStickyCTA onClick={scrollToCheckout} />
     </div>
   );
 }
@@ -866,21 +859,6 @@ function FAQSection() {
         </div>
       </div>
     </section>
-  );
-}
-
-function MobileStickyCTA({ onClick }) {
-  return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-orange-100 bg-white/92 p-3 shadow-[0_-16px_40px_rgba(20,18,15,0.08)] backdrop-blur md:hidden">
-      <button
-        type="button"
-        onClick={onClick}
-        className="inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-offer-600 px-5 py-3 text-base font-bold text-white shadow-premium"
-      >
-        <Box className="h-5 w-5" />
-        অর্ডার করুন
-      </button>
-    </div>
   );
 }
 
