@@ -617,7 +617,21 @@ function CheckoutForm({
                       >
                         {item.badge}
                       </span>
-                      <span className="block text-xl font-extrabold text-ink">{item.label}</span>
+                      <span className="flex items-center justify-center gap-2 pr-20 text-xl font-extrabold text-ink sm:justify-start">
+                        <span
+                          aria-hidden="true"
+                          className={[
+                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition',
+                            active
+                              ? 'border-offer-600 bg-offer-600 text-white shadow-[0_6px_16px_rgba(234,88,12,0.24)]'
+                              : 'border-orange-200 bg-white text-transparent',
+                            item.disabled ? 'border-zinc-200 bg-zinc-100 text-transparent shadow-none' : '',
+                          ].join(' ')}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </span>
+                        {item.label}
+                      </span>
                       <span className="mt-2 block text-sm font-bold text-zinc-600">
                         {item.count} x {pricePerPacket} = {bn(itemSubtotal)} টাকা
                       </span>
