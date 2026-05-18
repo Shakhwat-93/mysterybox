@@ -63,8 +63,13 @@ function getTimeLeft() {
   };
 }
 
+function getCurrentRoute() {
+  if (window.location.pathname.replace(/\/$/, '') === '/admin') return '/admin';
+  return window.location.hash;
+}
+
 function App() {
-  const [route, setRoute] = useState(window.location.hash);
+  const [route, setRoute] = useState(getCurrentRoute);
   const [settings, setSettings] = useState(defaultSettings);
   const [packageOptions, setPackageOptions] = useState(defaultPackages);
   const [selectedPackage, setSelectedPackage] = useState(6);
@@ -79,9 +84,18 @@ function App() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    const onHashChange = () => setRoute(window.location.hash);
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
+    const onRouteChange = () => setRoute(getCurrentRoute());
+    window.addEventListener('hashchange', onRouteChange);
+    window.addEventListener('popstate', onRouteChange);
+
+    if (window.location.hash === '#/admin' && window.location.pathname !== '/admin') {
+      window.history.replaceState(null, '', '/admin');
+      setRoute('/admin');
+    }
+    return () => {
+      window.removeEventListener('hashchange', onRouteChange);
+      window.removeEventListener('popstate', onRouteChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -111,7 +125,7 @@ function App() {
     loadLandingData();
   }, []);
 
-  if (route === '#/admin') {
+  if (route === '/admin' || route === '#/admin') {
     return <AdminPanel />;
   }
 
