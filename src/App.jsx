@@ -7,6 +7,7 @@ import {
   Gift,
   MessageCircle,
   PackageCheck,
+  RotateCcw,
   Send,
   ShieldCheck,
   ShoppingCart,
@@ -194,6 +195,7 @@ function App() {
 
         <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8 lg:py-20">
           <PolicySection compact />
+          <ReturnPolicySection />
           <CheckoutForm
             packages={packages}
             pricePerPacket={pricePerPacket}
@@ -767,6 +769,38 @@ function PolicySection({ compact = false }) {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ReturnPolicySection() {
+  const returnPolicies = [
+    'আপনার পার্সেল ডেলিভারি হওয়ার পর আপনি যদি মনে করেন আপনার পার্সেল কোনো সমস্যা হয়েছে/হতে পারে, অবশ্যই বাসায় নিয়ে আনবক্স করার সময় একটি ভিডিও করবেন। ডেলিভারির ২৪ ঘন্টার মধ্যে আমাদের হটলাইনে যোগাযোগ করবেন এবং রিটার্ন রিকোয়েস্ট পাঠাবেন।',
+    'রিটার্ন রিকোয়েস্ট পাঠানোর দুই থেকে তিন দিনের ভিতর আপনার বাসা থেকে আমাদের ডেলিভারি ম্যান পার্সেলটি রিটার্ন নিয়ে আসবে।',
+    'ডেলিভারি ম্যান আপনার থেকে রিটার্ন পার্সেল নিয়ে আসার এক দিনের ভিতর আপনার পেমেন্ট রিফান্ড পেয়ে যাবেন। বিকাশ/নগদ/রকেট/অথবা ব্যাংক একাউন্টের মাধ্যমে পেমেন্ট নিতে পারবেন।',
+  ];
+
+  return (
+    <section>
+      <div className="mb-5 text-center">
+        <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-xl font-extrabold text-white shadow-[0_0_0_4px_rgba(14,165,233,0.16),0_10px_30px_rgba(2,132,199,0.2)]">
+          <ShoppingCart className="h-5 w-5" />
+          ❌ রিটার্ন পলিসি👇
+        </span>
+      </div>
+
+      <div className="overflow-hidden rounded-md border border-sky-200 bg-white p-5 shadow-soft ring-1 ring-sky-50">
+        <div className="space-y-4">
+          {returnPolicies.map((policy, index) => (
+            <div key={policy} className="soft-reveal flex min-w-0 items-start gap-3 text-left" style={{ animationDelay: `${index * 0.04}s` }}>
+              <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600">
+                <RotateCcw className="h-3.5 w-3.5" />
+              </span>
+              <p className="min-w-0 break-words text-[13px] font-bold leading-7 text-red-600 [overflow-wrap:anywhere] sm:text-base">{policy}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
