@@ -16,16 +16,9 @@ import {
   Zap,
 } from 'lucide-react';
 import heroImage from '../assets/fdbc90e0-e521-4bce-8472-dc56029a47a9.webp';
-
-const TELEGRAM_LINK = 'https://t.me/DarzMysteryBox24';
-const PRICE_PER_PACKET = 59;
-const DELIVERY_CHARGE = 99;
-
-const packages = [
-  { count: 6, label: '৬ প্যাকেট', badge: 'Popular', disabled: false },
-  { count: 7, label: '৭ প্যাকেট', badge: 'স্টক আউট', disabled: true },
-  { count: 10, label: '১০ প্যাকেট', badge: 'Best Value', disabled: false },
-];
+import AdminPanel from './AdminPanel';
+import { defaultPackages, defaultSettings } from './defaults';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 const banglaDigits = new Map([
   ['0', '০'],
@@ -70,6 +63,9 @@ function getTimeLeft() {
 }
 
 function App() {
+  const [route, setRoute] = useState(window.location.hash);
+  const [settings, setSettings] = useState(defaultSettings);
+  const [packageOptions, setPackageOptions] = useState(defaultPackages);
   const [selectedPackage, setSelectedPackage] = useState(6);
   const [timeLeft, setTimeLeft] = useState(getTimeLeft);
   const [form, setForm] = useState({
@@ -82,14 +78,53 @@ function App() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
+    const onHashChange = () => setRoute(window.location.hash);
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  useEffect(() => {
     const timer = window.setInterval(() => setTimeLeft(getTimeLeft()), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
-  const subtotal = selectedPackage * PRICE_PER_PACKET;
-  const total = subtotal + DELIVERY_CHARGE;
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
 
-  const telegramMessage = TELEGRAM_LINK;
+    async function loadLandingData() {
+      const [settingsResult, packagesResult] = await Promise.all([
+        supabase.from('site_settings').select('*').eq('id', 'main').maybeSingle(),
+        supabase.from('package_options').select('*').order('display_order', { ascending: true }),
+      ]);
+
+      if (settingsResult.data) setSettings({ ...defaultSettings, ...settingsResult.data });
+      if (packagesResult.data?.length) {
+        setPackageOptions(packagesResult.data);
+        const firstAvailable = packagesResult.data.find((item) => item.is_available && item.stock_quantity > 0);
+        if (firstAvailable && !packagesResult.data.some((item) => item.packet_count === selectedPackage && item.is_available)) {
+          setSelectedPackage(firstAvailable.packet_count);
+        }
+      }
+    }
+
+    loadLandingData();
+  }, []);
+
+  if (route === '#/admin') {
+    return <AdminPanel />;
+  }
+
+  const pricePerPacket = Number(settings.price_per_packet || defaultSettings.price_per_packet);
+  const deliveryCharge = Number(settings.delivery_charge || defaultSettings.delivery_charge);
+  const subtotal = selectedPackage * pricePerPacket;
+  const total = subtotal + deliveryCharge;
+
+  const telegramMessage = settings.telegram_link || defaultSettings.telegram_link;
+  const packages = packageOptions.map((item) => ({
+    ...item,
+    count: item.packet_count,
+    disabled: !item.is_available || Number(item.stock_quantity) <= 0,
+  }));
 
   const validate = () => {
     const nextErrors = {};
@@ -111,11 +146,29 @@ function App() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!validate()) {
       return;
+    }
+
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('orders').insert({
+        customer_name: form.name.trim(),
+        phone: toEnglishDigits(form.phone).replace(/\s|-/g, ''),
+        address: form.address.trim(),
+        note: form.note.trim() || null,
+        package_count: selectedPackage,
+        subtotal,
+        delivery_charge: deliveryCharge,
+        total,
+      });
+
+      if (error) {
+        setErrors({ submit: error.message });
+        return;
+      }
     }
 
     setSubmitted(true);
@@ -129,7 +182,7 @@ function App() {
     <div className="min-h-screen overflow-x-hidden bg-white text-ink">
       <EntryCelebration />
       <FallingConfetti />
-      <TopOfferBar />
+      <TopOfferBar text={settings.top_bar_text} />
 
       <main>
         <section className="relative isolate overflow-hidden border-b border-orange-100 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.18),transparent_32%),linear-gradient(180deg,#fff7ed_0%,#ffffff_74%)]">
@@ -150,10 +203,10 @@ function App() {
 
               <div className="mb-5 max-w-2xl rounded-[1.65rem] border border-orange-200 bg-white/88 p-4 text-center shadow-soft backdrop-blur sm:p-5">
                 <p className="text-xl font-extrabold leading-snug text-offer-700 sm:text-2xl">
-                  চলছে 59-টাকার দারাজ অফিশিয়াল মিস্ট্রি বক্স অফার.!
+                  {settings.highlight_title}
                 </p>
                 <p className="mt-2 text-base font-bold leading-7 text-indigo-800 sm:text-lg">
-                  মাত্র ৫৯ টাকায় সেরা সারপ্রাইজটি কি আপনার হবে?
+                  {settings.highlight_subtitle}
                 </p>
               </div>
 
@@ -161,11 +214,10 @@ function App() {
                 Limited Mystery Drop
               </p>
               <h1 className="max-w-3xl break-words text-[2rem] font-extrabold leading-[1.12] tracking-normal text-ink sm:text-5xl lg:text-6xl">
-                মাত্র <span className="text-offer-600">৫৯ টাকায়</span> Daraz Mystery Box Surprise
+                {settings.hero_title}
               </h1>
               <p className="mt-5 max-w-2xl text-base font-medium leading-8 text-zinc-700 sm:text-lg">
-                সারপ্রাইজ প্যাকেট অর্ডার করুন, ঘরে বসে Cash on Delivery-তে রিসিভ করুন।
-                প্রতিটি প্যাকেটে কী থাকবে সেটাই আসল মিস্ট্রি।
+                {settings.hero_description}
               </p>
 
               <Countdown timeLeft={timeLeft} />
@@ -180,7 +232,7 @@ function App() {
                   এখনই অর্ডার করুন
                 </button>
                 <a
-                  href={TELEGRAM_LINK}
+                  href={telegramMessage}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 text-base font-bold text-ink shadow-soft ring-1 ring-zinc-200 transition hover:-translate-y-0.5 hover:ring-orange-200"
@@ -193,7 +245,7 @@ function App() {
 
             <div className="hero-reveal hero-reveal-delay relative min-w-0">
               <div className="absolute -right-3 -top-3 z-10 rounded-2xl bg-ink px-4 py-3 text-sm font-black text-white shadow-soft sm:right-4">
-                প্রতি প্যাকেট {bn(PRICE_PER_PACKET)} টাকা
+                প্রতি প্যাকেট {bn(pricePerPacket)} টাকা
               </div>
               <div className="overflow-hidden rounded-[2rem] bg-white p-3 shadow-premium ring-1 ring-orange-100">
                 <img
@@ -221,6 +273,9 @@ function App() {
         <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8 lg:py-20">
           <TrustGrid />
           <CheckoutForm
+            packages={packages}
+            pricePerPacket={pricePerPacket}
+            deliveryCharge={deliveryCharge}
             selectedPackage={selectedPackage}
             setSelectedPackage={setSelectedPackage}
             subtotal={subtotal}
@@ -346,12 +401,12 @@ function EntryCelebration() {
   );
 }
 
-function TopOfferBar() {
+function TopOfferBar({ text }) {
   return (
     <div className="sticky top-0 z-50 border-b border-orange-200 bg-offer-600 text-white shadow-sm">
       <div className="mx-auto flex min-h-12 max-w-7xl items-center justify-center gap-2 px-3 text-center text-xs font-bold leading-5 sm:px-4 sm:text-base">
         <Sparkles className="h-4 w-4 shrink-0 fill-white" />
-        <span className="min-w-0 truncate sm:whitespace-normal">আজকের Flash Offer চলছে - প্রতি প্যাকেট মাত্র ৫৯ টাকা</span>
+        <span className="min-w-0 truncate sm:whitespace-normal">{text}</span>
       </div>
     </div>
   );
@@ -465,6 +520,9 @@ function TrustGrid() {
 }
 
 function CheckoutForm({
+  packages,
+  pricePerPacket,
+  deliveryCharge,
   selectedPackage,
   setSelectedPackage,
   subtotal,
@@ -528,7 +586,7 @@ function CheckoutForm({
               <div className="grid gap-3 sm:grid-cols-3">
                 {packages.map((item) => {
                   const active = selectedPackage === item.count;
-                  const itemSubtotal = item.count * PRICE_PER_PACKET;
+                  const itemSubtotal = item.count * pricePerPacket;
 
                   return (
                     <button
@@ -555,7 +613,7 @@ function CheckoutForm({
                       </span>
                       <span className="block text-xl font-extrabold text-ink">{item.label}</span>
                       <span className="mt-2 block text-sm font-bold text-zinc-600">
-                        {item.count} x {PRICE_PER_PACKET} = {bn(itemSubtotal)} টাকা
+                        {item.count} x {pricePerPacket} = {bn(itemSubtotal)} টাকা
                       </span>
                       {item.disabled ? (
                         <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-red-600">
@@ -609,7 +667,7 @@ function CheckoutForm({
 
             <div className="rounded-3xl bg-zinc-50 p-4 ring-1 ring-zinc-100">
               <PriceRow label={`${bn(selectedPackage)} প্যাকেট সাবটোটাল`} value={`${bn(subtotal)} টাকা`} />
-              <PriceRow label="ডেলিভারি চার্জ" value={`${bn(DELIVERY_CHARGE)} টাকা`} />
+              <PriceRow label="ডেলিভারি চার্জ" value={`${bn(deliveryCharge)} টাকা`} />
               <div className="mt-3 flex items-center justify-between gap-4 border-t border-zinc-200 pt-3 text-left">
                 <span className="text-base font-extrabold text-ink">সর্বমোট</span>
                 <span className="text-2xl font-black text-offer-600">{bn(total)} টাকা</span>
@@ -623,6 +681,7 @@ function CheckoutForm({
               <ShoppingCart className="h-5 w-5" />
               অর্ডার কনফার্ম করুন
             </button>
+            {errors.submit ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">{errors.submit}</p> : null}
           </form>
         )}
     </section>
