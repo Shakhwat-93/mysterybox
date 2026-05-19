@@ -816,7 +816,7 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onCourierCheck }) {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-[2rem] bg-white p-5 shadow-premium sm:max-w-3xl sm:rounded-[2rem] sm:p-6">
+      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-[2rem] bg-white p-5 shadow-premium sm:max-w-5xl sm:rounded-[2rem] sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-black uppercase text-offer-600">Order Details</p>
@@ -936,6 +936,17 @@ function CourierSummary({ order, onCourierCheck, detailed = false }) {
     );
   }
 
+  if (detailed) {
+    return (
+      <CourierIntelligence
+        order={order}
+        summary={summary}
+        courierItems={courierItems}
+        reports={reports}
+      />
+    );
+  }
+
   return (
     <div className="space-y-2">
       {summary ? (
@@ -966,6 +977,122 @@ function CourierSummary({ order, onCourierCheck, detailed = false }) {
       <p className="text-[10px] font-bold text-zinc-400">
         Checked: {new Date(order.courier_checked_at).toLocaleString()}
       </p>
+    </div>
+  );
+}
+
+function CourierIntelligence({ order, summary, courierItems, reports }) {
+  const total = Number(summary?.total_parcel || 0);
+  const success = Number(summary?.success_parcel || 0);
+  const cancelled = Number(summary?.cancelled_parcel || 0);
+  const ratio = Number(summary?.success_ratio || 0);
+  const riskLevel = ratio >= 90 && reports.length === 0 ? 'low' : ratio >= 70 ? 'medium' : 'high';
+  const riskClass = riskLevel === 'low' ? 'text-emerald-600' : riskLevel === 'medium' ? 'text-orange-600' : 'text-red-600';
+
+  return (
+    <div className="overflow-hidden rounded-3xl bg-slate-50 ring-1 ring-slate-200">
+      <div className="flex flex-col gap-2 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="h-5 w-5 text-indigo-600" />
+          <h5 className="text-sm font-black uppercase tracking-normal text-ink">Courier Ratio Intelligence</h5>
+        </div>
+        <p className="text-xs font-black text-slate-400">
+          Synced {new Date(order.courier_checked_at).toLocaleString([], { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' })}
+        </p>
+      </div>
+
+      <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
+        <RatioCard label="Success Ratio" value={`${ratio}%`} />
+        <RatioCard label="Total Parcels" value={total} />
+        <RatioCard label="Successful" value={success} />
+        <RatioCard label="Cancelled" value={cancelled} />
+        <RatioCard label="Risk Level" value={riskLevel} valueClassName={riskClass} />
+      </div>
+
+      <div className="mx-4 mb-4 overflow-hidden rounded-3xl bg-white ring-1 ring-slate-200">
+        <div className="hidden grid-cols-[1.1fr_1.5fr_0.8fr_0.8fr_0.9fr_1.6fr] gap-4 bg-slate-100 px-5 py-4 text-xs font-black uppercase text-slate-400 lg:grid">
+          <span>Logo</span>
+          <span>Courier</span>
+          <span>Total</span>
+          <span>Success</span>
+          <span>Cancelled</span>
+          <span>Success Ratio</span>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {courierItems.map(([key, item]) => (
+            <CourierIntelligenceRow key={key} item={item} />
+          ))}
+          {!courierItems.length ? (
+            <div className="p-5 text-sm font-bold text-slate-500">No courier history found.</div>
+          ) : null}
+        </div>
+      </div>
+
+      {reports.length ? (
+        <div className="mx-4 mb-4 rounded-3xl bg-red-50 p-4 text-sm font-bold text-red-700 ring-1 ring-red-100">
+          Fraud reports found: {reports.length}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RatioCard({ label, value, valueClassName = 'text-ink' }) {
+  return (
+    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+      <p className="text-xs font-black uppercase text-slate-400">{label}</p>
+      <p className={['mt-2 text-2xl font-black', valueClassName].join(' ')}>{value}</p>
+    </div>
+  );
+}
+
+function CourierIntelligenceRow({ item }) {
+  const ratio = Number(item.success_ratio || 0);
+  const logoText = String(item.name || '?').slice(0, 2).toUpperCase();
+
+  return (
+    <div className="grid gap-3 px-4 py-4 lg:grid-cols-[1.1fr_1.5fr_0.8fr_0.8fr_0.9fr_1.6fr] lg:items-center lg:gap-4 lg:px-5">
+      <div className="flex items-center gap-3 lg:block">
+        {item.logo ? (
+          <img src={item.logo} alt={item.name} className="h-10 w-24 object-contain object-left" loading="lazy" />
+        ) : (
+          <div className="flex h-10 w-24 items-center text-sm font-black text-slate-400">{item.name}</div>
+        )}
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-700 ring-1 ring-slate-200 lg:hidden">
+          {logoText}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="hidden h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-700 ring-1 ring-slate-200 lg:inline-flex">
+          {logoText}
+        </span>
+        <p className="text-base font-black text-ink">{item.name}</p>
+      </div>
+
+      <MetricLabel label="Total" value={item.total_parcel ?? 0} />
+      <MetricLabel label="Success" value={item.success_parcel ?? 0} className="text-emerald-600" />
+      <MetricLabel label="Cancelled" value={item.cancelled_parcel ?? 0} className="text-red-600" />
+
+      <div>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="text-xs font-black uppercase text-slate-400 lg:hidden">Success Ratio</span>
+          <span className="text-sm font-black text-ink">{ratio}%</span>
+        </div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
+          <div className="h-full rounded-full bg-emerald-400" style={{ width: `${Math.max(0, Math.min(100, ratio))}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetricLabel({ label, value, className = 'text-ink' }) {
+  return (
+    <div className="flex items-center justify-between gap-3 lg:block">
+      <span className="text-xs font-black uppercase text-slate-400 lg:hidden">{label}</span>
+      <span className={['text-base font-black', className].join(' ')}>{value}</span>
     </div>
   );
 }
