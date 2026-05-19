@@ -740,50 +740,58 @@ function StockManager({ packages, onUpdate, newPackage, setNewPackage, onAddPack
 }
 
 function OrdersTable({ orders, onStatusChange, onCourierCheck }) {
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
+
   return (
     <div className="rounded-[2rem] bg-white p-5 shadow-soft ring-1 ring-zinc-100 sm:p-6">
-      <h2 className="text-2xl font-extrabold">Orders</h2>
-      <div className="mt-5 overflow-x-auto">
-        <table className="w-full min-w-[1180px] text-left text-sm">
-          <thead className="text-xs uppercase text-zinc-500">
-            <tr>
-              <th className="p-3">Customer</th>
-              <th className="p-3">Phone</th>
-              <th className="p-3">Package</th>
-              <th className="p-3">Total</th>
-              <th className="p-3">Address</th>
-              <th className="p-3">Courier Check</th>
-              <th className="p-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id} className="border-t border-zinc-100">
-                <td className="p-3 font-bold">{order.customer_name}</td>
-                <td className="p-3">{order.phone}</td>
-                <td className="p-3">{order.package_count} packet</td>
-                <td className="p-3 font-bold">{order.total} tk</td>
-                <td className="max-w-xs p-3 text-zinc-600">{order.address}</td>
-                <td className="w-[360px] p-3">
-                  <CourierSummary order={order} onCourierCheck={onCourierCheck} />
-                </td>
-                <td className="p-3">
-                  <select
-                    value={order.status}
-                    onChange={(event) => onStatusChange(order, event.target.value)}
-                    className="rounded-xl border border-zinc-200 px-3 py-2 font-bold"
-                  >
-                    {orderStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-extrabold">Orders</h2>
+          <p className="mt-1 text-sm font-bold text-zinc-500">Click an order to see package, status and courier ratio.</p>
+        </div>
+        <span className="w-fit rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-offer-700">
+          {orders.length} total
+        </span>
+      </div>
+
+      <div className="mt-5 space-y-3">
+        <div className="hidden rounded-2xl bg-zinc-50 px-4 py-3 text-xs font-black uppercase text-zinc-500 sm:grid sm:grid-cols-[1fr_0.8fr_1.4fr_0.6fr] sm:gap-4">
+          <span>Name</span>
+          <span>Phone</span>
+          <span>Address</span>
+          <span className="text-right">Amount</span>
+        </div>
+
+        {orders.map((order) => (
+          <button
+            key={order.id}
+            type="button"
+            onClick={() => setSelectedOrderId(order.id)}
+            className="block w-full rounded-3xl border border-zinc-100 bg-white p-4 text-left shadow-[0_10px_30px_rgba(20,18,15,0.04)] transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-orange-100"
+          >
+            <div className="grid min-w-0 gap-3 sm:grid-cols-[1fr_0.8fr_1.4fr_0.6fr] sm:items-center sm:gap-4">
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Name</p>
+                <p className="truncate text-base font-extrabold text-ink">{order.customer_name}</p>
+                <p className="mt-1 text-xs font-bold text-zinc-400 sm:hidden">{order.package_count} packet · {order.status}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Phone</p>
+                <p className="truncate text-sm font-bold text-zinc-700">{order.phone}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Address</p>
+                <p className="line-clamp-2 text-sm font-semibold leading-6 text-zinc-600">{order.address}</p>
+              </div>
+              <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
+                <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Amount</p>
+                <p className="text-lg font-black text-offer-600">{order.total} tk</p>
+              </div>
+            </div>
+          </button>
+        ))}
+
         {!orders.length ? (
           <div className="py-12 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
@@ -791,11 +799,99 @@ function OrdersTable({ orders, onStatusChange, onCourierCheck }) {
           </div>
         ) : null}
       </div>
+
+      <OrderDetailsModal
+        order={selectedOrder}
+        onClose={() => setSelectedOrderId(null)}
+        onStatusChange={onStatusChange}
+        onCourierCheck={onCourierCheck}
+      />
     </div>
   );
 }
 
-function CourierSummary({ order, onCourierCheck }) {
+function OrderDetailsModal({ order, onClose, onStatusChange, onCourierCheck }) {
+  if (!order) return null;
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-[2rem] bg-white p-5 shadow-premium sm:max-w-3xl sm:rounded-[2rem] sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase text-offer-600">Order Details</p>
+            <h3 className="mt-1 truncate text-2xl font-extrabold text-ink">{order.customer_name}</h3>
+            <p className="mt-1 text-sm font-bold text-zinc-500">{order.phone}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-600"
+            aria-label="Close details"
+          >
+            <XCircle className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <DetailStat label="Package" value={`${order.package_count} packet`} />
+          <DetailStat label="Subtotal" value={`${order.subtotal} tk`} />
+          <DetailStat label="Total" value={`${order.total} tk`} highlight />
+        </div>
+
+        <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
+          <div className="rounded-3xl bg-zinc-50 p-4 ring-1 ring-zinc-100">
+            <p className="text-xs font-black uppercase text-zinc-400">Address</p>
+            <p className="mt-2 text-sm font-bold leading-7 text-zinc-700">{order.address}</p>
+          </div>
+          <label className="rounded-3xl bg-zinc-50 p-4 text-sm font-bold text-ink ring-1 ring-zinc-100">
+            Status
+            <select
+              value={order.status}
+              onChange={(event) => onStatusChange(order, event.target.value)}
+              className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 font-bold"
+            >
+              {orderStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-5 rounded-3xl border border-orange-100 bg-white p-4 shadow-soft">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase text-offer-600">Courier Ratio</p>
+              <h4 className="text-xl font-extrabold text-ink">Delivery history</h4>
+            </div>
+            {!order.courier_checked_at && order.courier_check_status !== 'checking' ? (
+              <button
+                type="button"
+                onClick={() => onCourierCheck(order.id)}
+                className="rounded-2xl bg-offer-600 px-4 py-2 text-xs font-black text-white"
+              >
+                Check
+              </button>
+            ) : null}
+          </div>
+          <CourierSummary order={order} onCourierCheck={onCourierCheck} detailed />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailStat({ label, value, highlight = false }) {
+  return (
+    <div className={['rounded-3xl p-4 ring-1', highlight ? 'bg-orange-50 text-offer-700 ring-orange-100' : 'bg-zinc-50 text-ink ring-zinc-100'].join(' ')}>
+      <p className="text-xs font-black uppercase opacity-70">{label}</p>
+      <p className="mt-1 text-xl font-black">{value}</p>
+    </div>
+  );
+}
+
+function CourierSummary({ order, onCourierCheck, detailed = false }) {
   const status = order.courier_check_status || 'pending';
   const result = order.courier_check_result;
   const data = result?.data || {};
@@ -842,7 +938,7 @@ function CourierSummary({ order, onCourierCheck }) {
   return (
     <div className="space-y-2">
       {summary ? (
-        <div className="grid grid-cols-4 gap-1 rounded-2xl bg-emerald-50 p-2 text-center text-[11px] font-black text-emerald-800 ring-1 ring-emerald-100">
+        <div className={['grid grid-cols-4 gap-1 rounded-2xl bg-emerald-50 p-2 text-center font-black text-emerald-800 ring-1 ring-emerald-100', detailed ? 'text-xs sm:text-sm' : 'text-[11px]'].join(' ')}>
           <span>Total<br />{summary.total_parcel ?? 0}</span>
           <span>Success<br />{summary.success_parcel ?? 0}</span>
           <span>Cancel<br />{summary.cancelled_parcel ?? 0}</span>
@@ -852,7 +948,7 @@ function CourierSummary({ order, onCourierCheck }) {
 
       <div className="grid gap-1">
         {courierItems.map(([key, item]) => (
-          <div key={key} className="flex items-center justify-between gap-2 rounded-xl bg-zinc-50 px-2 py-1.5 text-[11px] font-bold text-zinc-700">
+          <div key={key} className={['flex items-center justify-between gap-2 rounded-xl bg-zinc-50 px-2 py-1.5 font-bold text-zinc-700', detailed ? 'text-xs sm:text-sm' : 'text-[11px]'].join(' ')}>
             <span className="truncate">{item.name}</span>
             <span className="shrink-0 text-emerald-700">{item.success_parcel ?? 0}/{item.total_parcel ?? 0}</span>
             <span className="shrink-0 text-red-600">C {item.cancelled_parcel ?? 0}</span>
@@ -861,7 +957,7 @@ function CourierSummary({ order, onCourierCheck }) {
       </div>
 
       {reports.length ? (
-        <div className="rounded-xl bg-red-50 px-2 py-1.5 text-[11px] font-bold text-red-700 ring-1 ring-red-100">
+        <div className={['rounded-xl bg-red-50 px-2 py-1.5 font-bold text-red-700 ring-1 ring-red-100', detailed ? 'text-xs sm:text-sm' : 'text-[11px]'].join(' ')}>
           Fraud reports: {reports.length}
         </div>
       ) : null}
