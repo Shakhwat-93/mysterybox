@@ -54,10 +54,10 @@ Add these environment variables in Vercel:
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-BDCOURIER_API_KEY=your-bdcourier-api-key
+BDCOURIER_API_KEY=your-bdcourier-api-key # optional fallback; preferred setup is Admin > Courier Setup
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` and `BDCOURIER_API_KEY` are server-only. Do not expose them in client-side variables.
+`SUPABASE_SERVICE_ROLE_KEY` and `BDCOURIER_API_KEY` are server-only. Do not expose them in client-side variables. Courier key can also be saved securely from the admin panel and will be used before the fallback env value.
 
 ## Supabase Setup
 
@@ -70,8 +70,9 @@ It creates:
 - `orders`
 - `profiles`
 - `pixel_settings`
+- `courier_settings`
 - RLS policies for public landing page reads, admin management, and locked-down server-side order creation
-- Admin-only content, stock, order, and pixel credential management policies
+- Admin-only content, stock, order, courier, and pixel credential management policies
 
 After creating an admin user in Supabase Auth, mark that user as admin:
 

@@ -6,6 +6,17 @@ function normalizePhone(value) {
   return String(value || '').replace(/[\s-]/g, '');
 }
 
+async function getCourierApiKey(supabase) {
+  const { data, error } = await supabase
+    .from('courier_settings')
+    .select('api_key')
+    .eq('id', 'main')
+    .maybeSingle();
+
+  if (error) throw error;
+  return String(data?.api_key || process.env.BDCOURIER_API_KEY || '').trim();
+}
+
 export default async function handler(req, res) {
   setCors(res);
   let supabase;
@@ -31,9 +42,25 @@ export default async function handler(req, res) {
     }
 
     orderId = req.body?.orderId;
+    const forceRetry = req.body?.force === true;
     if (!orderId) {
       json(res, 400, { ok: false, error: 'Missing orderId.' });
       return;
+    }
+
+    if (forceRetry) {
+      const { error: resetError } = await supabase
+        .from('orders')
+        .update({
+          courier_check_status: 'pending',
+          courier_checked_at: null,
+          courier_check_result: null,
+          courier_check_error: null,
+        })
+        .eq('id', orderId)
+        .eq('courier_check_status', 'error');
+
+      if (resetError) throw resetError;
     }
 
     const { data: claimedRows, error: claimError } = await supabase.rpc('claim_courier_check', {
@@ -66,8 +93,8 @@ export default async function handler(req, res) {
       return;
     }
 
-    const apiKey = process.env.BDCOURIER_API_KEY;
-    if (!apiKey) throw new Error('Missing BDCOURIER_API_KEY.');
+    const apiKey = await getCourierApiKey(supabase);
+    if (!apiKey) throw new Error('Missing courier API key. Set it from Admin > Courier Setup.');
 
     const response = await fetch(COURIER_API_URL, {
       method: 'POST',

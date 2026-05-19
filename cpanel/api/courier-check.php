@@ -12,13 +12,45 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $orderId = '';
 $claimed = null;
 
+function courier_api_key(): string
+{
+    $rows = supabase_request('GET', 'courier_settings?select=api_key&id=eq.main');
+    $savedKey = trim((string) ($rows[0]['api_key'] ?? ''));
+    if ($savedKey !== '') {
+        return $savedKey;
+    }
+
+    if (defined('BDCOURIER_API_KEY')) {
+        $fallback = trim((string) BDCOURIER_API_KEY);
+        if ($fallback !== '' && $fallback !== 'your-bdcourier-api-key') {
+            return $fallback;
+        }
+    }
+
+    return '';
+}
+
 try {
     require_admin();
     $body = read_json_body();
     $orderId = (string) ($body['orderId'] ?? '');
+    $forceRetry = ($body['force'] ?? false) === true;
 
     if ($orderId === '') {
         json_response(400, ['ok' => false, 'error' => 'Missing orderId.']);
+    }
+
+    if ($forceRetry) {
+        supabase_request(
+            'PATCH',
+            'orders?id=eq.' . rawurlencode($orderId) . '&courier_check_status=eq.error',
+            [
+                'courier_check_status' => 'pending',
+                'courier_checked_at' => null,
+                'courier_check_result' => null,
+                'courier_check_error' => null,
+            ]
+        );
     }
 
     $claimedRows = supabase_rpc('claim_courier_check', ['target_order_id' => $orderId]);
@@ -42,8 +74,9 @@ try {
         json_response(200, ['ok' => true, 'cached' => true, 'order' => $existing]);
     }
 
-    if (!defined('BDCOURIER_API_KEY') || BDCOURIER_API_KEY === '' || BDCOURIER_API_KEY === 'your-bdcourier-api-key') {
-        throw new RuntimeException('Missing BDCOURIER_API_KEY.');
+    $apiKey = courier_api_key();
+    if ($apiKey === '') {
+        throw new RuntimeException('Missing courier API key. Set it from Admin > Courier Setup.');
     }
 
     $curl = curl_init('https://api.bdcourier.com/courier-check');
@@ -52,7 +85,7 @@ try {
         CURLOPT_POST => true,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
-            'Authorization: Bearer ' . BDCOURIER_API_KEY,
+            'Authorization: Bearer ' . $apiKey,
         ],
         CURLOPT_POSTFIELDS => json_encode(['phone' => normalize_phone((string) ($claimed['phone'] ?? ''))], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         CURLOPT_CONNECTTIMEOUT => 3,

@@ -81,10 +81,6 @@ if (!supabaseUrl || !serviceRoleKey) {
   throw new Error('Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local.');
 }
 
-if (!courierApiKey) {
-  throw new Error('Missing BDCOURIER_API_KEY env or qurier.md API key.');
-}
-
 await fs.rm(outputDir, { recursive: true, force: true });
 await fs.mkdir(outputDir, { recursive: true });
 await fs.cp(distDir, outputDir, { recursive: true });
@@ -108,6 +104,7 @@ await fs.writeFile(
     'Required cPanel features: Apache .htaccess rewrite support and PHP with cURL enabled.',
     'Do not move the api folder. The React app calls /api/create-order, /api/pixel-config, and /api/meta-capi.',
     'Courier check calls /api/courier-check and stores each order result once in Supabase.',
+    'BDCourier API key can be saved from Admin > Courier Setup. The generated config key is only a fallback.',
     '',
   ].join('\n'),
   'utf8',

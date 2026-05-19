@@ -11,6 +11,7 @@ import {
   Settings,
   ShieldAlert,
   ShoppingBag,
+  Truck,
   XCircle,
 } from 'lucide-react';
 import { defaultPackages, defaultSettings } from './defaults';
@@ -20,6 +21,7 @@ const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'content', label: 'Content', icon: Settings },
   { id: 'pixel', label: 'Pixel Setup', icon: Settings },
+  { id: 'courier', label: 'Courier Setup', icon: Truck },
   { id: 'stock', label: 'Stock', icon: Boxes },
   { id: 'orders', label: 'Orders', icon: ShoppingBag },
 ];
@@ -50,6 +52,11 @@ const defaultPixelSettings = {
   gtm_container_id: '',
 };
 
+const defaultCourierSettings = {
+  id: 'main',
+  api_key: '',
+};
+
 function AdminPanel() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -61,6 +68,7 @@ function AdminPanel() {
   const [notice, setNotice] = useState('');
   const [settings, setSettings] = useState(defaultSettings);
   const [pixelSettings, setPixelSettings] = useState(defaultPixelSettings);
+  const [courierSettings, setCourierSettings] = useState(defaultCourierSettings);
   const [packages, setPackages] = useState(defaultPackages);
   const [orders, setOrders] = useState([]);
   const [courierCheckingIds, setCourierCheckingIds] = useState(new Set());
@@ -143,19 +151,21 @@ function AdminPanel() {
 
     setProfile(profileData);
 
-    const [settingsResult, pixelResult, packagesResult, ordersResult] = await Promise.all([
+    const [settingsResult, pixelResult, courierResult, packagesResult, ordersResult] = await Promise.all([
       supabase.from('site_settings').select('*').eq('id', 'main').maybeSingle(),
       supabase.from('pixel_settings').select('*').eq('id', 'main').maybeSingle(),
+      supabase.from('courier_settings').select('*').eq('id', 'main').maybeSingle(),
       supabase.from('package_options').select('*').order('display_order', { ascending: true }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(200),
     ]);
 
     if (settingsResult.data) setSettings({ ...defaultSettings, ...settingsResult.data });
     if (pixelResult.data) setPixelSettings({ ...defaultPixelSettings, ...pixelResult.data });
+    if (courierResult.data) setCourierSettings({ ...defaultCourierSettings, ...courierResult.data });
     if (packagesResult.data?.length) setPackages(packagesResult.data);
     if (ordersResult.data) setOrders(ordersResult.data);
 
-    const firstError = settingsResult.error || pixelResult.error || packagesResult.error || ordersResult.error;
+    const firstError = settingsResult.error || pixelResult.error || courierResult.error || packagesResult.error || ordersResult.error;
     if (firstError) setNotice(firstError.message);
 
     setLoading(false);
@@ -191,6 +201,9 @@ function AdminPanel() {
   const checkCourier = async (orderId) => {
     if (!session?.access_token || courierCheckingIds.has(orderId)) return;
 
+    const existingOrder = orders.find((order) => order.id === orderId);
+    const forceRetry = existingOrder?.courier_check_status === 'error';
+
     setCourierCheckingIds((current) => new Set(current).add(orderId));
     setOrders((current) =>
       current.map((order) =>
@@ -210,7 +223,7 @@ function AdminPanel() {
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, force: forceRetry }),
         signal: controller.signal,
       }).then((result) => result.json());
       window.clearTimeout(timeout);
@@ -287,6 +300,18 @@ function AdminPanel() {
     const { error } = await supabase.from('pixel_settings').upsert(payload);
     setSaving(false);
     setNotice(error ? error.message : 'Pixel settings saved.');
+  };
+
+  const saveCourierSettings = async () => {
+    setSaving(true);
+    setNotice('');
+    const payload = {
+      id: 'main',
+      api_key: String(courierSettings.api_key || '').trim(),
+    };
+    const { error } = await supabase.from('courier_settings').upsert(payload);
+    setSaving(false);
+    setNotice(error ? error.message : 'Courier settings saved.');
   };
 
   const updatePackage = async (item, patch) => {
@@ -419,6 +444,9 @@ function AdminPanel() {
           ) : null}
           {activeTab === 'pixel' ? (
             <PixelSetup settings={pixelSettings} setSettings={setPixelSettings} onSave={savePixelSettings} saving={saving} />
+          ) : null}
+          {activeTab === 'courier' ? (
+            <CourierSetup settings={courierSettings} setSettings={setCourierSettings} onSave={saveCourierSettings} saving={saving} />
           ) : null}
           {activeTab === 'stock' ? (
             <StockManager
@@ -613,6 +641,44 @@ function PixelSetup({ settings, setSettings, onSave, saving }) {
         >
           <Save className="h-4 w-4" />
           {saving ? 'Saving...' : 'Save Pixel Setup'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CourierSetup({ settings, setSettings, onSave, saving }) {
+  const update = (key, value) => setSettings({ ...settings, [key]: value });
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-[2rem] bg-white p-5 shadow-soft ring-1 ring-zinc-100 sm:p-6">
+        <p className="text-sm font-bold uppercase text-offer-600">Courier Intelligence</p>
+        <h2 className="mt-2 text-2xl font-extrabold">BDCourier API Setup</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+          API key save korle new order ashar sathe sathe customer phone diye courier ratio check hobe. Result ekbar save hoye gele same order-e abar duplicate API call hobe na.
+        </p>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <TextField
+            label="BDCourier API Key"
+            type="password"
+            value={settings.api_key}
+            onChange={(value) => update('api_key', value)}
+            placeholder="bdcourier API key paste korun"
+          />
+          <div className="rounded-2xl border border-orange-100 bg-orange-50 p-4 text-sm font-bold leading-6 text-offer-800">
+            This key is stored in Supabase and used server-side only. Browser-er public code-e API key expose hobe na.
+          </div>
+        </div>
+
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-2xl bg-offer-600 px-5 py-3 font-bold text-white disabled:opacity-60"
+        >
+          <Save className="h-4 w-4" />
+          {saving ? 'Saving...' : 'Save Courier Setup'}
         </button>
       </div>
     </div>
