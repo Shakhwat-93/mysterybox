@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   BadgeCheck,
@@ -20,7 +20,7 @@ import heroImage from '../assets/fdbc90e0-e521-4bce-8472-dc56029a47a9.webp';
 import AdminPanel from './AdminPanel';
 import { defaultPackages, defaultSettings } from './defaults';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { createEventId, initializeTracking, trackPurchase } from './lib/tracking';
+import { createEventId, initializeTracking, trackBeginCheckout, trackPurchase, trackViewItem } from './lib/tracking';
 
 const banglaDigits = new Map([
   ['0', '০'],
@@ -163,14 +163,6 @@ function App() {
     loadLandingData();
   }, []);
 
-  if (route === '/admin' || route === '#/admin') {
-    return <AdminPanel />;
-  }
-
-  if (route === '/success') {
-    return <OrderSuccessPage />;
-  }
-
   const pricePerPacket = Number(settings.price_per_packet || defaultSettings.price_per_packet);
   const deliveryCharge = Number(settings.delivery_charge || defaultSettings.delivery_charge);
   const subtotal = selectedPackage * pricePerPacket;
@@ -182,6 +174,19 @@ function App() {
     count: item.packet_count,
     disabled: !item.is_available || Number(item.stock_quantity) <= 0,
   }));
+
+  useEffect(() => {
+    if (route === '/admin' || route === '#/admin' || route === '/success') return;
+    trackViewItem({ packageCount: selectedPackage, subtotal, total });
+  }, [route, selectedPackage, subtotal, total]);
+
+  if (route === '/admin' || route === '#/admin') {
+    return <AdminPanel />;
+  }
+
+  if (route === '/success') {
+    return <OrderSuccessPage />;
+  }
 
   const validate = () => {
     const nextErrors = {};
@@ -629,13 +634,49 @@ function CheckoutForm({
   handleSubmit,
   submitting,
 }) {
+  const checkoutRef = useRef(null);
+
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
+  const fireBeginCheckout = (packageCount = selectedPackage) => {
+    const nextSubtotal = packageCount * pricePerPacket;
+    trackBeginCheckout({
+      packageCount,
+      subtotal: nextSubtotal,
+      deliveryCharge,
+      total: nextSubtotal + deliveryCharge,
+    });
+  };
+
+  useEffect(() => {
+    const node = checkoutRef.current;
+    if (!node) return undefined;
+
+    if (!('IntersectionObserver' in window)) {
+      fireBeginCheckout();
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          fireBeginCheckout();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.35 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
       id="checkout"
+      ref={checkoutRef}
       className="soft-reveal scroll-mt-20 rounded-[2rem] bg-white p-4 text-center shadow-premium ring-1 ring-orange-100 sm:p-6 lg:col-span-2 lg:mx-auto lg:w-full lg:max-w-5xl lg:p-7 lg:text-left"
     >
       <div className="mb-6 flex flex-col items-center gap-4 border-b border-zinc-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
@@ -655,7 +696,7 @@ function CheckoutForm({
         </div>
       </div>
 
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          <form onSubmit={handleSubmit} onFocusCapture={() => fireBeginCheckout()} noValidate className="space-y-5">
             <div>
               <label className="mb-3 block text-sm font-extrabold text-ink">প্যাকেট সিলেক্ট করুন</label>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -668,7 +709,10 @@ function CheckoutForm({
                       key={item.count}
                       type="button"
                       disabled={item.disabled}
-                      onClick={() => setSelectedPackage(item.count)}
+                      onClick={() => {
+                        setSelectedPackage(item.count);
+                        fireBeginCheckout(item.count);
+                      }}
                       className={[
                         'relative min-h-[116px] rounded-3xl border p-4 text-center transition focus:outline-none focus:ring-4 focus:ring-orange-100 sm:text-left',
                         active

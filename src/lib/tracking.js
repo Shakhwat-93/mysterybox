@@ -1,6 +1,8 @@
 let configPromise;
 let pixelInitialized = false;
 let gtmInitialized = false;
+let viewItemTracked = false;
+let beginCheckoutTracked = false;
 
 function isAdminRoute() {
   return window.location.pathname.replace(/\/$/, '') === '/admin' || window.location.hash === '#/admin';
@@ -75,6 +77,11 @@ function initGtm(containerId) {
   gtmInitialized = true;
 }
 
+function ensureTrackingReady(config) {
+  if (config?.gtmEnabled) initGtm(config.gtmContainerId);
+  if (config?.metaPixelEnabled) initMetaPixel(config.metaPixelId);
+}
+
 export async function getPixelConfig() {
   if (!configPromise) {
     configPromise = fetch('/api/pixel-config')
@@ -97,8 +104,7 @@ export async function initializeTracking() {
   window.dataLayer = window.dataLayer || [];
   const config = await getPixelConfig();
 
-  if (config.gtmEnabled) initGtm(config.gtmContainerId);
-  if (config.metaPixelEnabled) initMetaPixel(config.metaPixelId);
+  ensureTrackingReady(config);
   if (config.metaPixelEnabled && window.fbq) window.fbq('track', 'PageView');
 
   return config;
@@ -109,39 +115,105 @@ export function createEventId(prefix = 'event') {
   return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
+function buildItem({ packageCount, subtotal }) {
+  return {
+    item_id: `mystery-box-${packageCount}`,
+    item_name: `${packageCount} Packet Mystery Box`,
+    item_category: 'Mystery Box',
+    price: Number(subtotal || 0),
+    quantity: 1,
+  };
+}
+
+function pushEcommerceEvent(eventName, ecommerce, extra = {}) {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ ecommerce: null });
+  window.dataLayer.push({
+    event: eventName,
+    ...extra,
+    ecommerce,
+  });
+}
+
+export async function trackViewItem({ packageCount, subtotal, total }) {
+  if (typeof window === 'undefined' || isAdminRoute() || viewItemTracked) return;
+  viewItemTracked = true;
+
+  const config = await getPixelConfig();
+  ensureTrackingReady(config);
+  const item = buildItem({ packageCount, subtotal });
+
+  pushEcommerceEvent('view_item', {
+    currency: 'BDT',
+    value: Number(total || subtotal || 0),
+    items: [item],
+  });
+
+  if (config.metaPixelEnabled && window.fbq) {
+    window.fbq('track', 'ViewContent', {
+      value: Number(total || subtotal || 0),
+      currency: 'BDT',
+      content_ids: [item.item_id],
+      content_name: item.item_name,
+      content_type: 'product',
+    });
+  }
+}
+
+export async function trackBeginCheckout({ packageCount, subtotal, deliveryCharge, total }) {
+  if (typeof window === 'undefined' || isAdminRoute() || beginCheckoutTracked) return;
+  beginCheckoutTracked = true;
+
+  const config = await getPixelConfig();
+  ensureTrackingReady(config);
+  const item = buildItem({ packageCount, subtotal });
+
+  pushEcommerceEvent('begin_checkout', {
+    currency: 'BDT',
+    value: Number(total || 0),
+    shipping: Number(deliveryCharge || 0),
+    items: [item],
+  });
+
+  if (config.metaPixelEnabled && window.fbq) {
+    window.fbq('track', 'InitiateCheckout', {
+      value: Number(total || 0),
+      currency: 'BDT',
+      content_ids: [item.item_id],
+      content_name: item.item_name,
+      content_type: 'product',
+      num_items: Number(packageCount || 0),
+    });
+  }
+}
+
 export async function trackPurchase({ eventId, orderId, packageCount, subtotal, deliveryCharge, total, customer }) {
   if (typeof window === 'undefined' || isAdminRoute()) return;
 
   const config = await getPixelConfig();
+  ensureTrackingReady(config);
+  const item = buildItem({ packageCount, subtotal });
   const customData = {
     value: Number(total || 0),
     currency: 'BDT',
-    content_ids: [`mystery-box-${packageCount}`],
-    content_name: `${packageCount} Packet Mystery Box`,
+    content_ids: [item.item_id],
+    content_name: item.item_name,
     content_type: 'product',
     num_items: Number(packageCount || 0),
     order_id: orderId,
   };
 
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({
-    event: 'purchase',
-    event_id: eventId,
-    ecommerce: {
+  pushEcommerceEvent(
+    'purchase',
+    {
       transaction_id: orderId,
       value: Number(total || 0),
       currency: 'BDT',
       shipping: Number(deliveryCharge || 0),
-      items: [
-        {
-          item_id: `mystery-box-${packageCount}`,
-          item_name: `${packageCount} Packet Mystery Box`,
-          price: Number(subtotal || 0),
-          quantity: 1,
-        },
-      ],
+      items: [item],
     },
-  });
+    { event_id: eventId },
+  );
 
   if (config.metaPixelEnabled && window.fbq) {
     window.fbq('track', 'Purchase', customData, { eventID: eventId });
