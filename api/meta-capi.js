@@ -3,10 +3,33 @@ import { createServiceClient, getClientIp, json, setCors } from './_supabase.js'
 
 const GRAPH_VERSION = 'v25.0';
 
+function normalizeMetaPixelId(value) {
+  const text = String(value || '');
+  const initMatch = text.match(/fbq\(\s*['"]init['"]\s*,\s*['"]?(\d{6,30})/i);
+  const urlMatch = text.match(/facebook\.com\/tr\?id=(\d{6,30})/i);
+  const plainMatch = text.match(/\b\d{6,30}\b/);
+  return (initMatch?.[1] || urlMatch?.[1] || plainMatch?.[0] || '').trim();
+}
+
 function sha256(value) {
   const normalized = String(value || '').trim().toLowerCase();
   if (!normalized) return undefined;
   return crypto.createHash('sha256').update(normalized).digest('hex');
+}
+
+function normalizeBdPhone(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.startsWith('8801')) return digits;
+  if (digits.startsWith('01')) return `88${digits}`;
+  return digits;
+}
+
+function splitName(value) {
+  const parts = String(value || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || '',
+    lastName: parts.length > 1 ? parts[parts.length - 1] : '',
+  };
 }
 
 function getCookie(req, name) {
@@ -41,7 +64,8 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     if (error) throw error;
-    if (!settings?.meta_capi_enabled || !settings?.meta_pixel_id || !settings?.meta_access_token) {
+    const metaPixelId = normalizeMetaPixelId(settings?.meta_pixel_id);
+    if (!settings?.meta_capi_enabled || !metaPixelId || !settings?.meta_access_token) {
       json(res, 200, { ok: false, skipped: true, reason: 'Meta CAPI is not configured.' });
       return;
     }
@@ -52,6 +76,7 @@ export default async function handler(req, res) {
     const requestedCustomData = body.customData || {};
     const orderId = requestedCustomData.order_id;
     const customer = body.customer || {};
+    const { firstName, lastName } = splitName(customer.name);
     const userAgent = req.headers['user-agent'];
     const ipAddress = getClientIp(req);
 
@@ -83,8 +108,10 @@ export default async function handler(req, res) {
     };
 
     const userData = {
-      ph: sha256(customer.phone),
-      fn: sha256(customer.name),
+      ph: sha256(normalizeBdPhone(customer.phone)),
+      fn: sha256(firstName || customer.name),
+      ln: sha256(lastName),
+      external_id: sha256(order.id),
       client_user_agent: userAgent,
       client_ip_address: ipAddress || undefined,
       fbp: getCookie(req, '_fbp'),
@@ -113,7 +140,7 @@ export default async function handler(req, res) {
       payload.test_event_code = settings.meta_test_event_code;
     }
 
-    const response = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${settings.meta_pixel_id}/events?access_token=${encodeURIComponent(settings.meta_access_token)}`, {
+    const response = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${metaPixelId}/events?access_token=${encodeURIComponent(settings.meta_access_token)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

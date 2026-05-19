@@ -27,6 +27,14 @@ function normalizeGtmContainerId(value) {
   return match ? match[0].toUpperCase() : '';
 }
 
+function normalizeMetaPixelId(value) {
+  const text = String(value || '');
+  const initMatch = text.match(/fbq\(\s*['"]init['"]\s*,\s*['"]?(\d{6,30})/i);
+  const urlMatch = text.match(/facebook\.com\/tr\?id=(\d{6,30})/i);
+  const plainMatch = text.match(/\b\d{6,30}\b/);
+  return (initMatch?.[1] || urlMatch?.[1] || plainMatch?.[0] || '').trim();
+}
+
 function injectGtmNoScript(containerId) {
   if (!containerId || document.getElementById('gtm-noscript-frame')) return;
   const iframe = document.createElement('iframe');
@@ -41,7 +49,8 @@ function injectGtmNoScript(containerId) {
 }
 
 function initMetaPixel(pixelId) {
-  if (!pixelId || pixelInitialized) return;
+  const normalizedPixelId = normalizeMetaPixelId(pixelId);
+  if (!normalizedPixelId || pixelInitialized) return;
 
   /* eslint-disable */
   !(function (f, b, e, v, n, t, s) {
@@ -62,7 +71,7 @@ function initMetaPixel(pixelId) {
   })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
   /* eslint-enable */
 
-  window.fbq('init', pixelId);
+  window.fbq('init', normalizedPixelId);
   pixelInitialized = true;
 }
 
@@ -137,6 +146,21 @@ function normalizeCustomer(customer = {}) {
   };
 }
 
+function normalizeBdPhone(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.startsWith('8801')) return digits;
+  if (digits.startsWith('01')) return `88${digits}`;
+  return digits;
+}
+
+function splitName(value) {
+  const parts = String(value || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || '',
+    lastName: parts.length > 1 ? parts[parts.length - 1] : '',
+  };
+}
+
 async function sha256(value) {
   const normalized = String(value || '').trim().toLowerCase();
   if (!normalized || !window.crypto?.subtle) return '';
@@ -149,11 +173,14 @@ async function sha256(value) {
 
 async function buildUserData(customer) {
   const normalized = normalizeCustomer(customer);
+  const metaPhone = normalizeBdPhone(normalized.phone);
+  const { firstName, lastName } = splitName(normalized.name);
   if (!normalized.name && !normalized.phone && !normalized.address) return {};
 
-  const [phoneHash, nameHash] = await Promise.all([
-    sha256(normalized.phone),
-    sha256(normalized.name),
+  const [phoneHash, firstNameHash, lastNameHash] = await Promise.all([
+    sha256(metaPhone),
+    sha256(firstName || normalized.name),
+    sha256(lastName),
   ]);
 
   return {
@@ -161,7 +188,8 @@ async function buildUserData(customer) {
     ...(normalized.name ? { name: normalized.name } : {}),
     ...(normalized.address ? { address: { street: normalized.address, country: 'BD' } } : {}),
     ...(phoneHash ? { sha256_phone_number: phoneHash, ph: phoneHash } : {}),
-    ...(nameHash ? { sha256_name: nameHash, fn: nameHash } : {}),
+    ...(firstNameHash ? { sha256_first_name: firstNameHash, fn: firstNameHash } : {}),
+    ...(lastNameHash ? { sha256_last_name: lastNameHash, ln: lastNameHash } : {}),
   };
 }
 

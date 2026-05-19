@@ -30,6 +30,14 @@ function normalizeGtmContainerId(value) {
   return match ? match[0].toUpperCase() : '';
 }
 
+function normalizeMetaPixelId(value) {
+  const text = String(value || '');
+  const initMatch = text.match(/fbq\(\s*['"]init['"]\s*,\s*['"]?(\d{6,30})/i);
+  const urlMatch = text.match(/facebook\.com\/tr\?id=(\d{6,30})/i);
+  const plainMatch = text.match(/\b\d{6,30}\b/);
+  return (initMatch?.[1] || urlMatch?.[1] || plainMatch?.[0] || '').trim();
+}
+
 const defaultPixelSettings = {
   id: 'main',
   meta_pixel_enabled: false,
@@ -175,11 +183,14 @@ function AdminPanel() {
   const savePixelSettings = async () => {
     setSaving(true);
     setNotice('');
+    const metaPixelId = normalizeMetaPixelId(pixelSettings.meta_pixel_id);
     const gtmContainerId = normalizeGtmContainerId(pixelSettings.gtm_container_id);
     const payload = {
       ...pixelSettings,
       id: 'main',
-      meta_pixel_id: String(pixelSettings.meta_pixel_id || '').trim(),
+      meta_pixel_enabled: Boolean(pixelSettings.meta_pixel_enabled || metaPixelId),
+      meta_pixel_id: metaPixelId,
+      meta_capi_enabled: Boolean(pixelSettings.meta_capi_enabled || (metaPixelId && pixelSettings.meta_access_token)),
       meta_access_token: String(pixelSettings.meta_access_token || '').trim(),
       meta_test_event_code: String(pixelSettings.meta_test_event_code || '').trim(),
       gtm_enabled: Boolean(pixelSettings.gtm_enabled || gtmContainerId),
@@ -484,7 +495,13 @@ function PixelSetup({ settings, setSettings, onSave, saving }) {
             checked={settings.meta_capi_enabled}
             onChange={(value) => update('meta_capi_enabled', value)}
           />
-          <TextField label="Meta Pixel ID" value={settings.meta_pixel_id} onChange={(value) => update('meta_pixel_id', value)} placeholder="123456789012345" />
+          <TextField
+            label="Meta Pixel ID or Full Pixel Code"
+            value={settings.meta_pixel_id}
+            onChange={(value) => update('meta_pixel_id', value)}
+            placeholder="123456789012345 অথবা পুরো Meta Pixel code paste করুন"
+            multiline
+          />
           <TextField label="Meta CAPI Access Token" type="password" value={settings.meta_access_token} onChange={(value) => update('meta_access_token', value)} placeholder="EAAB..." />
           <TextField label="Meta Test Event Code" value={settings.meta_test_event_code} onChange={(value) => update('meta_test_event_code', value)} placeholder="TEST12345" />
           <ToggleField
