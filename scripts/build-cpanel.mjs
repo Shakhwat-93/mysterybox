@@ -1,0 +1,91 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+const root = process.cwd();
+const distDir = path.join(root, 'dist');
+const cpanelTemplateDir = path.join(root, 'cpanel');
+const deployDir = path.join(root, 'deploy');
+const outputDir = path.join(deployDir, 'cpanel-upload');
+
+function parseEnv(text) {
+  const env = {};
+  for (const line of text.split(/\r?\n/)) {
+    if (!line || line.trim().startsWith('#')) continue;
+    const match = line.match(/^([^=]+)=(.*)$/);
+    if (!match) continue;
+    env[match[1].trim()] = match[2].trim().replace(/^['"]|['"]$/g, '');
+  }
+  return env;
+}
+
+function phpString(value) {
+  return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
+async function pathExists(target) {
+  try {
+    await fs.access(target);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function copyTemplateFiles(source, target) {
+  await fs.mkdir(target, { recursive: true });
+  const entries = await fs.readdir(source, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const sourcePath = path.join(source, entry.name);
+    const targetPath = path.join(target, entry.name);
+
+    if (entry.isDirectory()) {
+      await copyTemplateFiles(sourcePath, targetPath);
+      continue;
+    }
+
+    if (entry.name === 'config.example.php') continue;
+    await fs.copyFile(sourcePath, targetPath);
+  }
+}
+
+if (!(await pathExists(distDir))) {
+  throw new Error('Missing dist folder. Run npm run build first.');
+}
+
+const envPath = path.join(root, '.env.local');
+const env = parseEnv(await fs.readFile(envPath, 'utf8'));
+const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
+const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error('Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local.');
+}
+
+await fs.rm(outputDir, { recursive: true, force: true });
+await fs.mkdir(outputDir, { recursive: true });
+await fs.cp(distDir, outputDir, { recursive: true });
+await copyTemplateFiles(cpanelTemplateDir, outputDir);
+
+const configPhp = `<?php
+declare(strict_types=1);
+
+const SUPABASE_URL = ${phpString(supabaseUrl)};
+const SUPABASE_SERVICE_ROLE_KEY = ${phpString(serviceRoleKey)};
+const META_GRAPH_VERSION = 'v25.0';
+`;
+
+await fs.writeFile(path.join(outputDir, 'api', 'config.php'), configPhp, 'utf8');
+
+await fs.writeFile(
+  path.join(outputDir, 'README-UPLOAD.txt'),
+  [
+    'Upload everything inside this folder to cPanel public_html, or upload the zip and extract it in public_html.',
+    'Required cPanel features: Apache .htaccess rewrite support and PHP with cURL enabled.',
+    'Do not move the api folder. The React app calls /api/create-order, /api/pixel-config, and /api/meta-capi.',
+    '',
+  ].join('\n'),
+  'utf8',
+);
+
+console.log(`cPanel upload folder ready: ${outputDir}`);
