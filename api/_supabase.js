@@ -32,3 +32,26 @@ export function getClientIp(req) {
   const value = Array.isArray(forwardedFor) ? forwardedFor[0] : String(forwardedFor || realIp || '');
   return value.split(',')[0].trim();
 }
+
+export function getBearerToken(req) {
+  const authorization = req.headers.authorization || req.headers.Authorization || '';
+  const match = String(authorization).match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : '';
+}
+
+export async function requireAdmin(req, supabase) {
+  const token = getBearerToken(req);
+  if (!token) return { ok: false, status: 401, error: 'Missing admin session.' };
+
+  const { data: userData, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !userData?.user?.id) return { ok: false, status: 401, error: 'Invalid admin session.' };
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', userData.user.id)
+    .maybeSingle();
+
+  if (profileError || !profile?.is_admin) return { ok: false, status: 403, error: 'Admin access required.' };
+  return { ok: true, user: userData.user };
+}

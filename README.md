@@ -24,6 +24,7 @@ Premium Bangla-first React landing page for a Daraz Mystery Box flash offer.
 - Admin panel at `/admin`
 - Admin-managed Meta Pixel, GTM, and Meta CAPI tracking setup
 - Server-side duplicate order guard by device/IP with admin-adjustable block days
+- One-time cached courier history check for each order in the admin panel
 - Vercel-ready build setup
 
 ## Local Development
@@ -53,9 +54,10 @@ Add these environment variables in Vercel:
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+BDCOURIER_API_KEY=your-bdcourier-api-key
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` is server-only and is required for `/api/pixel-config`, `/api/meta-capi`, and `/api/create-order`. Do not expose it in client-side variables.
+`SUPABASE_SERVICE_ROLE_KEY` and `BDCOURIER_API_KEY` are server-only. Do not expose them in client-side variables.
 
 ## Supabase Setup
 

@@ -37,6 +37,10 @@ create table if not exists public.orders (
   total integer not null,
   device_hash text,
   ip_hash text,
+  courier_check_status text not null default 'pending' check (courier_check_status in ('pending', 'checking', 'success', 'error')),
+  courier_checked_at timestamptz,
+  courier_check_result jsonb,
+  courier_check_error text,
   status text not null default 'pending' check (status in ('pending', 'confirmed', 'delivered', 'cancelled')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -49,6 +53,9 @@ where device_hash is not null;
 create index if not exists orders_ip_hash_created_at_idx
 on public.orders (ip_hash, created_at desc)
 where ip_hash is not null;
+
+create index if not exists orders_courier_check_status_idx
+on public.orders (courier_check_status, created_at desc);
 
 create table if not exists public.pixel_settings (
   id text primary key default 'main',
@@ -85,6 +92,23 @@ drop trigger if exists decrement_package_stock_after_order on public.orders;
 create trigger decrement_package_stock_after_order
 after insert on public.orders
 for each row execute function public.decrement_package_stock();
+
+create or replace function public.claim_courier_check(target_order_id uuid)
+returns table(id uuid, phone text)
+language sql
+security definer
+set search_path = public
+as $$
+  update public.orders
+  set
+    courier_check_status = 'checking',
+    courier_check_error = null,
+    updated_at = now()
+  where public.orders.id = target_order_id
+    and public.orders.courier_checked_at is null
+    and public.orders.courier_check_status <> 'checking'
+  returning public.orders.id, public.orders.phone;
+$$;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,

@@ -62,6 +62,7 @@ function AdminPanel() {
   const [pixelSettings, setPixelSettings] = useState(defaultPixelSettings);
   const [packages, setPackages] = useState(defaultPackages);
   const [orders, setOrders] = useState([]);
+  const [courierCheckingIds, setCourierCheckingIds] = useState(new Set());
   const [newPackage, setNewPackage] = useState({
     packet_count: '',
     label: '',
@@ -170,6 +171,72 @@ function AdminPanel() {
   const signOut = async () => {
     await supabase.auth.signOut();
     window.location.hash = '';
+  };
+
+  useEffect(() => {
+    if (!session?.access_token || !profile?.is_admin || !orders.length) return;
+
+    const uncheckedOrders = orders.filter(
+      (order) =>
+        !order.courier_checked_at &&
+        order.courier_check_status !== 'checking' &&
+        !courierCheckingIds.has(order.id),
+    );
+
+    if (!uncheckedOrders.length) return;
+    uncheckedOrders.slice(0, 8).forEach((order) => checkCourier(order.id));
+  }, [orders, session?.access_token, profile?.is_admin, courierCheckingIds]);
+
+  const checkCourier = async (orderId) => {
+    if (!session?.access_token || courierCheckingIds.has(orderId)) return;
+
+    setCourierCheckingIds((current) => new Set(current).add(orderId));
+    setOrders((current) =>
+      current.map((order) =>
+        order.id === orderId && !order.courier_checked_at
+          ? { ...order, courier_check_status: 'checking' }
+          : order,
+      ),
+    );
+
+    try {
+      const response = await fetch('/api/courier-check', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId }),
+      }).then((result) => result.json());
+
+      if (response.order) {
+        setOrders((current) =>
+          current.map((order) => (order.id === orderId ? { ...order, ...response.order } : order)),
+        );
+      } else if (response.error) {
+        setOrders((current) =>
+          current.map((order) =>
+            order.id === orderId
+              ? { ...order, courier_check_status: 'error', courier_check_error: response.error }
+              : order,
+          ),
+        );
+      }
+    } catch (error) {
+      setOrders((current) =>
+        current.map((order) =>
+          order.id === orderId
+            ? { ...order, courier_check_status: 'error', courier_check_error: error.message }
+            : order,
+        ),
+      );
+    } finally {
+      setCourierCheckingIds((current) => {
+        const next = new Set(current);
+        next.delete(orderId);
+        return next;
+      });
+    }
   };
 
   const saveSettings = async () => {
@@ -341,7 +408,7 @@ function AdminPanel() {
               onAddPackage={addPackage}
             />
           ) : null}
-          {activeTab === 'orders' ? <OrdersTable orders={orders} onStatusChange={updateOrderStatus} /> : null}
+          {activeTab === 'orders' ? <OrdersTable orders={orders} onStatusChange={updateOrderStatus} onCourierCheck={checkCourier} /> : null}
         </section>
       </div>
     </AdminShell>
@@ -672,12 +739,12 @@ function StockManager({ packages, onUpdate, newPackage, setNewPackage, onAddPack
   );
 }
 
-function OrdersTable({ orders, onStatusChange }) {
+function OrdersTable({ orders, onStatusChange, onCourierCheck }) {
   return (
     <div className="rounded-[2rem] bg-white p-5 shadow-soft ring-1 ring-zinc-100 sm:p-6">
       <h2 className="text-2xl font-extrabold">Orders</h2>
       <div className="mt-5 overflow-x-auto">
-        <table className="w-full min-w-[900px] text-left text-sm">
+        <table className="w-full min-w-[1180px] text-left text-sm">
           <thead className="text-xs uppercase text-zinc-500">
             <tr>
               <th className="p-3">Customer</th>
@@ -685,6 +752,7 @@ function OrdersTable({ orders, onStatusChange }) {
               <th className="p-3">Package</th>
               <th className="p-3">Total</th>
               <th className="p-3">Address</th>
+              <th className="p-3">Courier Check</th>
               <th className="p-3">Status</th>
             </tr>
           </thead>
@@ -696,6 +764,9 @@ function OrdersTable({ orders, onStatusChange }) {
                 <td className="p-3">{order.package_count} packet</td>
                 <td className="p-3 font-bold">{order.total} tk</td>
                 <td className="max-w-xs p-3 text-zinc-600">{order.address}</td>
+                <td className="w-[360px] p-3">
+                  <CourierSummary order={order} onCourierCheck={onCourierCheck} />
+                </td>
                 <td className="p-3">
                   <select
                     value={order.status}
@@ -720,6 +791,84 @@ function OrdersTable({ orders, onStatusChange }) {
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function CourierSummary({ order, onCourierCheck }) {
+  const status = order.courier_check_status || 'pending';
+  const result = order.courier_check_result;
+  const data = result?.data || {};
+  const summary = data.summary;
+  const courierItems = Object.entries(data).filter(([key, value]) => key !== 'summary' && value?.name);
+  const reports = Array.isArray(result?.reports) ? result.reports : [];
+
+  if (status === 'checking') {
+    return (
+      <div className="rounded-2xl bg-orange-50 p-3 text-xs font-bold text-offer-700 ring-1 ring-orange-100">
+        <span className="inline-flex items-center gap-2">
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+          Checking courier history...
+        </span>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="rounded-2xl bg-red-50 p-3 text-xs font-bold text-red-700 ring-1 ring-red-100">
+        <p>{order.courier_check_error || 'Courier check failed.'}</p>
+        {!order.courier_checked_at ? (
+          <button onClick={() => onCourierCheck(order.id)} className="mt-2 rounded-xl bg-white px-3 py-1.5 text-red-700 ring-1 ring-red-100">
+            Check again
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (!order.courier_checked_at || !result) {
+    return (
+      <button
+        onClick={() => onCourierCheck(order.id)}
+        className="inline-flex items-center gap-2 rounded-2xl bg-zinc-50 px-3 py-2 text-xs font-bold text-zinc-700 ring-1 ring-zinc-200"
+      >
+        <RefreshCw className="h-3.5 w-3.5" />
+        Check courier
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {summary ? (
+        <div className="grid grid-cols-4 gap-1 rounded-2xl bg-emerald-50 p-2 text-center text-[11px] font-black text-emerald-800 ring-1 ring-emerald-100">
+          <span>Total<br />{summary.total_parcel ?? 0}</span>
+          <span>Success<br />{summary.success_parcel ?? 0}</span>
+          <span>Cancel<br />{summary.cancelled_parcel ?? 0}</span>
+          <span>Ratio<br />{summary.success_ratio ?? 0}%</span>
+        </div>
+      ) : null}
+
+      <div className="grid gap-1">
+        {courierItems.map(([key, item]) => (
+          <div key={key} className="flex items-center justify-between gap-2 rounded-xl bg-zinc-50 px-2 py-1.5 text-[11px] font-bold text-zinc-700">
+            <span className="truncate">{item.name}</span>
+            <span className="shrink-0 text-emerald-700">{item.success_parcel ?? 0}/{item.total_parcel ?? 0}</span>
+            <span className="shrink-0 text-red-600">C {item.cancelled_parcel ?? 0}</span>
+          </div>
+        ))}
+      </div>
+
+      {reports.length ? (
+        <div className="rounded-xl bg-red-50 px-2 py-1.5 text-[11px] font-bold text-red-700 ring-1 ring-red-100">
+          Fraud reports: {reports.length}
+        </div>
+      ) : null}
+
+      <p className="text-[10px] font-bold text-zinc-400">
+        Checked: {new Date(order.courier_checked_at).toLocaleString()}
+      </p>
     </div>
   );
 }

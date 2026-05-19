@@ -69,6 +69,63 @@ function supabase_request(string $method, string $path, ?array $body = null, arr
     return is_array($data) ? $data : [];
 }
 
+function supabase_rpc(string $functionName, array $body = []): array
+{
+    return supabase_request('POST', 'rpc/' . rawurlencode($functionName), $body);
+}
+
+function supabase_auth_user(string $token): ?array
+{
+    $url = rtrim(SUPABASE_URL, '/') . '/auth/v1/user';
+    $curl = curl_init($url);
+    curl_setopt_array($curl, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization: Bearer ' . $token,
+        ],
+        CURLOPT_TIMEOUT => 20,
+    ]);
+
+    $raw = curl_exec($curl);
+    $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    if ($raw === false || $status >= 400) return null;
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : null;
+}
+
+function bearer_token(): string
+{
+    $authorization = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+    if (preg_match('/^Bearer\s+(.+)$/i', (string) $authorization, $match)) {
+        return $match[1];
+    }
+    return '';
+}
+
+function require_admin(): array
+{
+    $token = bearer_token();
+    if ($token === '') {
+        json_response(401, ['ok' => false, 'error' => 'Missing admin session.']);
+    }
+
+    $user = supabase_auth_user($token);
+    $userId = $user['id'] ?? null;
+    if (!$userId) {
+        json_response(401, ['ok' => false, 'error' => 'Invalid admin session.']);
+    }
+
+    $profiles = supabase_request('GET', 'profiles?select=is_admin&id=eq.' . rawurlencode((string) $userId));
+    if (empty($profiles[0]['is_admin'])) {
+        json_response(403, ['ok' => false, 'error' => 'Admin access required.']);
+    }
+
+    return $user;
+}
+
 function graph_request(string $url, array $payload): array
 {
     $curl = curl_init($url);
