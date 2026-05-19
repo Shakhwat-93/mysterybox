@@ -11,6 +11,7 @@ import {
   Settings,
   ShieldAlert,
   ShoppingBag,
+  XCircle,
 } from 'lucide-react';
 import { defaultPackages, defaultSettings } from './defaults';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
