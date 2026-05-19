@@ -706,6 +706,9 @@ function CheckoutForm({
         <div className="rounded-2xl bg-ink px-4 py-3 text-center text-white">
           <div className="text-xs font-bold text-orange-100">Total</div>
           <div className="text-2xl font-black">{bn(total)} টাকা</div>
+          <div className="mt-1 text-[11px] font-bold leading-4 text-orange-100">
+            {bn(subtotal)} + {bn(deliveryCharge)} ডেলিভারি
+          </div>
         </div>
       </div>
 
