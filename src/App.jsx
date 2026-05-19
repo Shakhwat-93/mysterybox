@@ -600,9 +600,9 @@ function TrustGrid() {
   ];
 
   return (
-    <div className="flex flex-col justify-center text-center lg:text-left">
+    <div className="flex flex-col items-center justify-center text-center">
       <div className="mb-7">
-        <div className="mx-auto max-w-2xl rounded-3xl bg-white px-5 py-7 text-center shadow-premium ring-1 ring-orange-100 sm:px-8 sm:py-8 lg:mx-0">
+        <div className="mx-auto max-w-2xl rounded-3xl bg-white px-5 py-7 text-center shadow-premium ring-1 ring-orange-100 sm:px-8 sm:py-8">
           <p className="text-2xl font-extrabold leading-9 text-offer-600 sm:text-3xl">সতর্ক বার্তা ✍️✍️✍️</p>
           <p className="mt-4 break-words text-xl font-extrabold leading-9 text-ink [overflow-wrap:anywhere] sm:text-2xl sm:leading-10">
             Mystery Box মানে আপনার ভাগ্যের পরীক্ষা!
@@ -618,10 +618,10 @@ function TrustGrid() {
         {items.map((item, index) => (
           <div
             key={item.title}
-            className="soft-reveal rounded-3xl bg-white p-5 text-center shadow-soft ring-1 ring-zinc-100 lg:text-left"
+            className="soft-reveal rounded-3xl bg-white p-5 text-center shadow-soft ring-1 ring-zinc-100"
             style={{ animationDelay: `${index * 0.04}s` }}
           >
-            <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-offer-600 lg:mx-0">
+            <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-offer-600">
               <item.icon className="h-5 w-5" />
             </div>
             <h3 className="text-lg font-extrabold text-ink">{item.title}</h3>
