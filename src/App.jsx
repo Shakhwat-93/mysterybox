@@ -805,10 +805,10 @@ function CheckoutForm({
             />
 
             <div className="rounded-3xl bg-zinc-50 p-4 ring-1 ring-zinc-100">
-              <PriceRow label={`${bn(selectedPackage)} প্যাকেট সাবটোটাল`} value={`${bn(subtotal)} টাকা`} />
+              <PriceRow label="প্রোডাক্ট প্রাইস" value={`${bn(subtotal)} টাকা`} note={`${bn(selectedPackage)} প্যাকেট x ${bn(pricePerPacket)} টাকা`} />
               <PriceRow label="ডেলিভারি চার্জ" value={`${bn(deliveryCharge)} টাকা`} />
-              <div className="mt-3 flex items-center justify-between gap-4 border-t border-zinc-200 pt-3 text-left">
-                <span className="text-base font-extrabold text-ink">সর্বমোট</span>
+              <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-orange-100 bg-white px-4 py-3 text-left shadow-[0_10px_24px_rgba(234,88,12,0.08)]">
+                <span className="text-base font-extrabold text-ink">ফাইনাল টোটাল</span>
                 <span className="text-2xl font-black text-offer-600">{bn(total)} টাকা</span>
               </div>
             </div>
@@ -929,10 +929,13 @@ function Textarea({ label, error, ...props }) {
   );
 }
 
-function PriceRow({ label, value }) {
+function PriceRow({ label, value, note }) {
   return (
     <div className="flex items-center justify-between gap-4 py-1.5 text-left text-sm font-bold text-zinc-600">
-      <span>{label}</span>
+      <span>
+        {label}
+        {note ? <span className="mt-0.5 block text-xs font-semibold text-zinc-400">{note}</span> : null}
+      </span>
       <span>{value}</span>
     </div>
   );
