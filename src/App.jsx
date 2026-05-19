@@ -218,6 +218,18 @@ function App() {
 
     const normalizedPhone = toEnglishDigits(form.phone).replace(/\s|-/g, '');
     const trackingEventId = createEventId('purchase');
+    await trackBeginCheckout({
+      packageCount: selectedPackage,
+      subtotal,
+      deliveryCharge,
+      total,
+      customer: {
+        name: form.name.trim(),
+        phone: normalizedPhone,
+        address: form.address.trim(),
+      },
+      force: true,
+    });
     setSubmitting(true);
 
     const response = await fetch('/api/create-order', {
@@ -256,6 +268,7 @@ function App() {
       customer: {
         name: form.name.trim(),
         phone: normalizedPhone,
+        address: form.address.trim(),
       },
     });
 

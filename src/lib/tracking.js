@@ -125,6 +125,46 @@ function buildItem({ packageCount, subtotal }) {
   };
 }
 
+function normalizeCustomer(customer = {}) {
+  const phone = String(customer.phone || '').replace(/[\s-]/g, '');
+  const name = String(customer.name || '').trim();
+  const address = String(customer.address || '').trim();
+
+  return {
+    ...(name ? { name } : {}),
+    ...(phone ? { phone } : {}),
+    ...(address ? { address } : {}),
+  };
+}
+
+async function sha256(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized || !window.crypto?.subtle) return '';
+
+  const buffer = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalized));
+  return Array.from(new Uint8Array(buffer))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function buildUserData(customer) {
+  const normalized = normalizeCustomer(customer);
+  if (!normalized.name && !normalized.phone && !normalized.address) return {};
+
+  const [phoneHash, nameHash] = await Promise.all([
+    sha256(normalized.phone),
+    sha256(normalized.name),
+  ]);
+
+  return {
+    ...(normalized.phone ? { phone_number: normalized.phone } : {}),
+    ...(normalized.name ? { name: normalized.name } : {}),
+    ...(normalized.address ? { address: { street: normalized.address, country: 'BD' } } : {}),
+    ...(phoneHash ? { sha256_phone_number: phoneHash, ph: phoneHash } : {}),
+    ...(nameHash ? { sha256_name: nameHash, fn: nameHash } : {}),
+  };
+}
+
 function pushEcommerceEvent(eventName, ecommerce, extra = {}) {
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ ecommerce: null });
@@ -160,20 +200,29 @@ export async function trackViewItem({ packageCount, subtotal, total }) {
   }
 }
 
-export async function trackBeginCheckout({ packageCount, subtotal, deliveryCharge, total }) {
-  if (typeof window === 'undefined' || isAdminRoute() || beginCheckoutTracked) return;
-  beginCheckoutTracked = true;
+export async function trackBeginCheckout({ packageCount, subtotal, deliveryCharge, total, customer, force = false }) {
+  if (typeof window === 'undefined' || isAdminRoute() || (beginCheckoutTracked && !force)) return;
+  if (!force) beginCheckoutTracked = true;
 
   const config = await getPixelConfig();
   ensureTrackingReady(config);
   const item = buildItem({ packageCount, subtotal });
+  const customerDetails = normalizeCustomer(customer);
+  const userData = await buildUserData(customer);
 
-  pushEcommerceEvent('begin_checkout', {
-    currency: 'BDT',
-    value: Number(total || 0),
-    shipping: Number(deliveryCharge || 0),
-    items: [item],
-  });
+  pushEcommerceEvent(
+    'begin_checkout',
+    {
+      currency: 'BDT',
+      value: Number(total || 0),
+      shipping: Number(deliveryCharge || 0),
+      items: [item],
+    },
+    {
+      ...(Object.keys(customerDetails).length ? { customer: customerDetails } : {}),
+      ...(Object.keys(userData).length ? { user_data: userData } : {}),
+    },
+  );
 
   if (config.metaPixelEnabled && window.fbq) {
     window.fbq('track', 'InitiateCheckout', {
@@ -193,6 +242,8 @@ export async function trackPurchase({ eventId, orderId, packageCount, subtotal, 
   const config = await getPixelConfig();
   ensureTrackingReady(config);
   const item = buildItem({ packageCount, subtotal });
+  const customerDetails = normalizeCustomer(customer);
+  const userData = await buildUserData(customer);
   const customData = {
     value: Number(total || 0),
     currency: 'BDT',
@@ -212,7 +263,12 @@ export async function trackPurchase({ eventId, orderId, packageCount, subtotal, 
       shipping: Number(deliveryCharge || 0),
       items: [item],
     },
-    { event_id: eventId },
+    {
+      event_id: eventId,
+      order_id: orderId,
+      customer: customerDetails,
+      user_data: userData,
+    },
   );
 
   if (config.metaPixelEnabled && window.fbq) {
