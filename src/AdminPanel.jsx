@@ -3,6 +3,8 @@ import {
   ArrowLeft,
   Boxes,
   CheckCircle2,
+  Check,
+  Copy,
   LayoutDashboard,
   LogOut,
   PackagePlus,
@@ -828,7 +830,48 @@ function StockManager({ packages, onUpdate, newPackage, setNewPackage, onAddPack
 
 function OrdersTable({ orders, onStatusChange, onCourierCheck }) {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [copiedOrderId, setCopiedOrderId] = useState(null);
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
+
+  const formatOrderCopy = (order) =>
+    [
+      `Customer: ${order.customer_name || ''}`,
+      `Phone: ${order.phone || ''}`,
+      `Address: ${order.address || ''}`,
+      `Package: ${order.package_count || 0} packet`,
+      `Product Price: ${order.subtotal || 0} tk`,
+      `Delivery Charge: ${order.delivery_charge || 0} tk`,
+      `Total: ${order.total || 0} tk`,
+      `Status: ${order.status || 'pending'}`,
+      order.note ? `Note: ${order.note}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+  const copyOrder = async (event, order) => {
+    event.stopPropagation();
+    const text = formatOrderCopy(order);
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopiedOrderId(order.id);
+      window.setTimeout(() => setCopiedOrderId((current) => (current === order.id ? null : current)), 1600);
+    } catch {
+      setCopiedOrderId(null);
+    }
+  };
 
   return (
     <div className="rounded-[2rem] bg-white p-5 shadow-soft ring-1 ring-zinc-100 sm:p-6">
@@ -843,21 +886,26 @@ function OrdersTable({ orders, onStatusChange, onCourierCheck }) {
       </div>
 
       <div className="mt-5 space-y-3">
-        <div className="hidden rounded-2xl bg-zinc-50 px-4 py-3 text-xs font-black uppercase text-zinc-500 sm:grid sm:grid-cols-[1fr_0.8fr_1.4fr_0.6fr] sm:gap-4">
+        <div className="hidden rounded-2xl bg-zinc-50 px-4 py-3 text-xs font-black uppercase text-zinc-500 sm:grid sm:grid-cols-[1fr_0.8fr_1.4fr_0.6fr_0.45fr] sm:gap-4">
           <span>Name</span>
           <span>Phone</span>
           <span>Address</span>
           <span className="text-right">Amount</span>
+          <span className="text-right">Copy</span>
         </div>
 
         {orders.map((order) => (
-          <button
+          <div
             key={order.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => setSelectedOrderId(order.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') setSelectedOrderId(order.id);
+            }}
             className="block w-full rounded-3xl border border-zinc-100 bg-white p-4 text-left shadow-[0_10px_30px_rgba(20,18,15,0.04)] transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-orange-100"
           >
-            <div className="grid min-w-0 gap-3 sm:grid-cols-[1fr_0.8fr_1.4fr_0.6fr] sm:items-center sm:gap-4">
+            <div className="grid min-w-0 gap-3 sm:grid-cols-[1fr_0.8fr_1.4fr_0.6fr_0.45fr] sm:items-center sm:gap-4">
               <div className="min-w-0">
                 <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Name</p>
                 <p className="truncate text-base font-extrabold text-ink">{order.customer_name}</p>
@@ -875,8 +923,24 @@ function OrdersTable({ orders, onStatusChange, onCourierCheck }) {
                 <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Amount</p>
                 <p className="text-lg font-black text-offer-600">{order.total} tk</p>
               </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={(event) => copyOrder(event, order)}
+                  className={[
+                    'inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl px-3 py-2 text-xs font-black transition',
+                    copiedOrderId === order.id
+                      ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100'
+                      : 'bg-orange-50 text-offer-700 ring-1 ring-orange-100 hover:bg-offer-600 hover:text-white',
+                  ].join(' ')}
+                  aria-label={`Copy order details for ${order.customer_name}`}
+                >
+                  {copiedOrderId === order.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  <span className="sm:hidden">{copiedOrderId === order.id ? 'Copied' : 'Copy details'}</span>
+                </button>
+              </div>
             </div>
-          </button>
+          </div>
         ))}
 
         {!orders.length ? (
