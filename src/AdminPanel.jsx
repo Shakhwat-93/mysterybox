@@ -25,6 +25,11 @@ const tabs = [
 
 const orderStatuses = ['pending', 'confirmed', 'delivered', 'cancelled'];
 
+function normalizeGtmContainerId(value) {
+  const match = String(value || '').match(/GTM-[A-Z0-9]+/i);
+  return match ? match[0].toUpperCase() : '';
+}
+
 const defaultPixelSettings = {
   id: 'main',
   meta_pixel_enabled: false,
@@ -170,13 +175,15 @@ function AdminPanel() {
   const savePixelSettings = async () => {
     setSaving(true);
     setNotice('');
+    const gtmContainerId = normalizeGtmContainerId(pixelSettings.gtm_container_id);
     const payload = {
       ...pixelSettings,
       id: 'main',
       meta_pixel_id: String(pixelSettings.meta_pixel_id || '').trim(),
       meta_access_token: String(pixelSettings.meta_access_token || '').trim(),
       meta_test_event_code: String(pixelSettings.meta_test_event_code || '').trim(),
-      gtm_container_id: String(pixelSettings.gtm_container_id || '').trim(),
+      gtm_enabled: Boolean(pixelSettings.gtm_enabled || gtmContainerId),
+      gtm_container_id: gtmContainerId,
     };
     const { error } = await supabase.from('pixel_settings').upsert(payload);
     setSaving(false);
@@ -485,7 +492,13 @@ function PixelSetup({ settings, setSettings, onSave, saving }) {
             checked={settings.gtm_enabled}
             onChange={(value) => update('gtm_enabled', value)}
           />
-          <TextField label="GTM Container ID" value={settings.gtm_container_id} onChange={(value) => update('gtm_container_id', value)} placeholder="GTM-XXXXXXX" />
+          <TextField
+            label="GTM Container ID or Full GTM Code"
+            value={settings.gtm_container_id}
+            onChange={(value) => update('gtm_container_id', value)}
+            placeholder="GTM-NT67SQ58 অথবা পুরো GTM script/noscript code paste করুন"
+            multiline
+          />
         </div>
 
         <button
@@ -525,17 +538,29 @@ function ToggleField({ label, checked, onChange }) {
   );
 }
 
-function TextField({ label, value, onChange, type = 'text', placeholder }) {
+function TextField({ label, value, onChange, type = 'text', placeholder, multiline = false }) {
+  const fieldClassName = 'mt-2 w-full rounded-2xl border border-zinc-200 px-4 py-3 outline-none focus:border-offer-500 focus:ring-4 focus:ring-orange-100';
+
   return (
     <label className="block text-sm font-bold text-ink">
       {label}
-      <input
-        type={type}
-        value={value ?? ''}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-zinc-200 px-4 py-3 outline-none focus:border-offer-500 focus:ring-4 focus:ring-orange-100"
-      />
+      {multiline ? (
+        <textarea
+          value={value ?? ''}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          rows={4}
+          className={`${fieldClassName} resize-y font-mono text-xs`}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value ?? ''}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className={fieldClassName}
+        />
+      )}
     </label>
   );
 }

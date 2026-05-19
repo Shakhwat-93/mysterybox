@@ -12,7 +12,30 @@ function loadScript(id, src) {
   script.id = id;
   script.async = true;
   script.src = src;
-  document.head.appendChild(script);
+  const firstScript = document.getElementsByTagName('script')[0];
+  if (firstScript?.parentNode) {
+    firstScript.parentNode.insertBefore(script, firstScript);
+  } else {
+    document.head.appendChild(script);
+  }
+}
+
+function normalizeGtmContainerId(value) {
+  const match = String(value || '').match(/GTM-[A-Z0-9]+/i);
+  return match ? match[0].toUpperCase() : '';
+}
+
+function injectGtmNoScript(containerId) {
+  if (!containerId || document.getElementById('gtm-noscript-frame')) return;
+  const iframe = document.createElement('iframe');
+  iframe.id = 'gtm-noscript-frame';
+  iframe.src = `https://www.googletagmanager.com/ns.html?id=${encodeURIComponent(containerId)}`;
+  iframe.height = '0';
+  iframe.width = '0';
+  iframe.style.display = 'none';
+  iframe.style.visibility = 'hidden';
+  iframe.setAttribute('aria-hidden', 'true');
+  document.body.insertBefore(iframe, document.body.firstChild);
 }
 
 function initMetaPixel(pixelId) {
@@ -42,11 +65,13 @@ function initMetaPixel(pixelId) {
 }
 
 function initGtm(containerId) {
-  if (!containerId || gtmInitialized) return;
+  const normalizedContainerId = normalizeGtmContainerId(containerId);
+  if (!normalizedContainerId || gtmInitialized) return;
 
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
-  loadScript('gtm-script', `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(containerId)}`);
+  loadScript('gtm-script', `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(normalizedContainerId)}`);
+  injectGtmNoScript(normalizedContainerId);
   gtmInitialized = true;
 }
 
