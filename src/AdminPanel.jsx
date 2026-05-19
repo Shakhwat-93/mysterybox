@@ -215,7 +215,20 @@ function AdminPanel() {
       }).then((result) => result.json());
       window.clearTimeout(timeout);
 
-      if (response.order) {
+      if (response.pending) {
+        setOrders((current) =>
+          current.map((order) =>
+            order.id === orderId
+              ? {
+                  ...order,
+                  ...response.order,
+                  courier_check_status: 'error',
+                  courier_check_error: response.error || 'Courier check is still processing. Please retry.',
+                }
+              : order,
+          ),
+        );
+      } else if (response.order) {
         setOrders((current) =>
           current.map((order) => (order.id === orderId ? { ...order, ...response.order } : order)),
         );
@@ -879,7 +892,7 @@ function OrderDetailsModal({ order, onClose, onStatusChange, onCourierCheck }) {
                 onClick={() => onCourierCheck(order.id)}
                 className="rounded-2xl bg-offer-600 px-4 py-2 text-xs font-black text-white"
               >
-                Check
+                {order.courier_check_status === 'error' ? 'Retry' : 'Check'}
               </button>
             ) : null}
           </div>
@@ -923,11 +936,9 @@ function CourierSummary({ order, onCourierCheck, detailed = false }) {
     return (
       <div className="rounded-2xl bg-red-50 p-3 text-xs font-bold text-red-700 ring-1 ring-red-100">
         <p>{order.courier_check_error || 'Courier check failed.'}</p>
-        {!order.courier_checked_at ? (
-          <button onClick={() => onCourierCheck(order.id)} className="mt-2 rounded-xl bg-white px-3 py-1.5 text-red-700 ring-1 ring-red-100">
-            Check again
-          </button>
-        ) : null}
+        <button onClick={() => onCourierCheck(order.id)} className="mt-2 rounded-xl bg-white px-3 py-1.5 text-red-700 ring-1 ring-red-100">
+          Check again
+        </button>
       </div>
     );
   }

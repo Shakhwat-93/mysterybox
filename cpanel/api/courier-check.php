@@ -27,9 +27,19 @@ try {
     if (!$claimed) {
         $existingRows = supabase_request(
             'GET',
-            'orders?select=id,courier_check_status,courier_checked_at,courier_check_result,courier_check_error&id=eq.' . rawurlencode($orderId)
+            'orders?select=id,courier_check_status,courier_checked_at,courier_check_result,courier_check_error,updated_at&id=eq.' . rawurlencode($orderId)
         );
-        json_response(200, ['ok' => true, 'cached' => true, 'order' => $existingRows[0] ?? null]);
+        $existing = $existingRows[0] ?? null;
+        if (($existing['courier_check_status'] ?? '') === 'checking' && empty($existing['courier_checked_at'])) {
+            json_response(200, [
+                'ok' => false,
+                'pending' => true,
+                'cached' => true,
+                'order' => $existing,
+                'error' => 'Courier check is still processing. Retry after a few seconds.',
+            ]);
+        }
+        json_response(200, ['ok' => true, 'cached' => true, 'order' => $existing]);
     }
 
     if (!defined('BDCOURIER_API_KEY') || BDCOURIER_API_KEY === '' || BDCOURIER_API_KEY === 'your-bdcourier-api-key') {
@@ -45,8 +55,8 @@ try {
             'Authorization: Bearer ' . BDCOURIER_API_KEY,
         ],
         CURLOPT_POSTFIELDS => json_encode(['phone' => normalize_phone((string) ($claimed['phone'] ?? ''))], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        CURLOPT_CONNECTTIMEOUT => 4,
-        CURLOPT_TIMEOUT => 10,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 8,
     ]);
 
     $raw = curl_exec($curl);

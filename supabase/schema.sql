@@ -108,7 +108,7 @@ as $$
     and public.orders.courier_checked_at is null
     and (
       public.orders.courier_check_status <> 'checking'
-      or public.orders.updated_at < now() - interval '2 minutes'
+      or public.orders.updated_at < now() - interval '30 seconds'
     )
   returning public.orders.id, public.orders.phone;
 $$;

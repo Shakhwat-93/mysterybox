@@ -46,11 +46,22 @@ export default async function handler(req, res) {
     if (!claimed) {
       const { data: existing, error: existingError } = await supabase
         .from('orders')
-        .select('id,courier_check_status,courier_checked_at,courier_check_result,courier_check_error')
+        .select('id,courier_check_status,courier_checked_at,courier_check_result,courier_check_error,updated_at')
         .eq('id', orderId)
         .maybeSingle();
 
       if (existingError) throw existingError;
+      if (existing?.courier_check_status === 'checking' && !existing?.courier_checked_at) {
+        json(res, 200, {
+          ok: false,
+          pending: true,
+          cached: true,
+          order: existing,
+          error: 'Courier check is still processing. Retry after a few seconds.',
+        });
+        return;
+      }
+
       json(res, 200, { ok: true, cached: true, order: existing });
       return;
     }
@@ -65,7 +76,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ phone: normalizePhone(claimed.phone) }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(8000),
     });
 
     const result = await response.json().catch(() => ({}));
