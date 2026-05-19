@@ -30,6 +30,29 @@ const tabs = [
 
 const orderStatuses = ['pending', 'confirmed', 'delivered', 'cancelled'];
 
+const orderStatusMeta = {
+  pending: {
+    label: 'Pending',
+    className: 'bg-amber-50 text-amber-700 ring-amber-100',
+    headerClassName: 'border-amber-100 bg-amber-50 text-amber-800',
+  },
+  confirmed: {
+    label: 'Confirmed',
+    className: 'bg-sky-50 text-sky-700 ring-sky-100',
+    headerClassName: 'border-sky-100 bg-sky-50 text-sky-800',
+  },
+  delivered: {
+    label: 'Delivered',
+    className: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    headerClassName: 'border-emerald-100 bg-emerald-50 text-emerald-800',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    className: 'bg-red-50 text-red-700 ring-red-100',
+    headerClassName: 'border-red-100 bg-red-50 text-red-800',
+  },
+};
+
 function normalizeGtmContainerId(value) {
   const match = String(value || '').match(/GTM-[A-Z0-9]+/i);
   return match ? match[0].toUpperCase() : '';
@@ -831,19 +854,36 @@ function StockManager({ packages, onUpdate, newPackage, setNewPackage, onAddPack
 function OrdersTable({ orders, onStatusChange, onCourierCheck }) {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [copiedOrderId, setCopiedOrderId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
+  const statusCounts = useMemo(
+    () =>
+      orderStatuses.reduce(
+        (counts, status) => ({
+          ...counts,
+          [status]: orders.filter((order) => (order.status || 'pending') === status).length,
+        }),
+        { all: orders.length },
+      ),
+    [orders],
+  );
+  const groupedOrders = useMemo(() => {
+    const visibleStatuses = statusFilter === 'all' ? orderStatuses : [statusFilter];
+    return visibleStatuses
+      .map((status) => ({
+        status,
+        orders: orders.filter((order) => (order.status || 'pending') === status),
+      }))
+      .filter((group) => statusFilter !== 'all' || group.orders.length);
+  }, [orders, statusFilter]);
 
   const formatOrderCopy = (order) =>
     [
-      `Customer: ${order.customer_name || ''}`,
-      `Phone: ${order.phone || ''}`,
-      `Address: ${order.address || ''}`,
-      `Package: ${order.package_count || 0} packet`,
-      `Product Price: ${order.subtotal || 0} tk`,
-      `Delivery Charge: ${order.delivery_charge || 0} tk`,
-      `Total: ${order.total || 0} tk`,
-      `Status: ${order.status || 'pending'}`,
-      order.note ? `Note: ${order.note}` : '',
+      order.customer_name || '',
+      order.address || '',
+      order.phone || '',
+      `${order.package_count || 0} packet = ${order.total || 0} taka`,
+      order.note || '',
     ]
       .filter(Boolean)
       .join('\n');
@@ -885,63 +925,117 @@ function OrdersTable({ orders, onStatusChange, onCourierCheck }) {
         </span>
       </div>
 
-      <div className="mt-5 space-y-3">
-        <div className="hidden rounded-2xl bg-zinc-50 px-4 py-3 text-xs font-black uppercase text-zinc-500 sm:grid sm:grid-cols-[1fr_0.8fr_1.4fr_0.6fr_0.45fr] sm:gap-4">
-          <span>Name</span>
-          <span>Phone</span>
-          <span>Address</span>
-          <span className="text-right">Amount</span>
-          <span className="text-right">Copy</span>
-        </div>
+      <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+        {['all', ...orderStatuses].map((status) => {
+          const active = statusFilter === status;
+          const meta = orderStatusMeta[status];
+          return (
+            <button
+              key={status}
+              type="button"
+              onClick={() => setStatusFilter(status)}
+              className={[
+                'inline-flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-xs font-black ring-1 transition',
+                active
+                  ? status === 'all'
+                    ? 'bg-ink text-white ring-ink'
+                    : meta.className
+                  : 'bg-white text-zinc-600 ring-zinc-200 hover:bg-orange-50 hover:text-offer-700 hover:ring-orange-100',
+              ].join(' ')}
+            >
+              {status === 'all' ? 'All' : meta.label}
+              <span className={['rounded-full px-2 py-0.5 text-[10px]', active ? 'bg-white/25' : 'bg-zinc-100'].join(' ')}>
+                {statusCounts[status] || 0}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-        {orders.map((order) => (
-          <div
-            key={order.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => setSelectedOrderId(order.id)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') setSelectedOrderId(order.id);
-            }}
-            className="block w-full rounded-3xl border border-zinc-100 bg-white p-4 text-left shadow-[0_10px_30px_rgba(20,18,15,0.04)] transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-orange-100"
-          >
-            <div className="grid min-w-0 gap-3 sm:grid-cols-[1fr_0.8fr_1.4fr_0.6fr_0.45fr] sm:items-center sm:gap-4">
-              <div className="min-w-0">
-                <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Name</p>
-                <p className="truncate text-base font-extrabold text-ink">{order.customer_name}</p>
-                <p className="mt-1 text-xs font-bold text-zinc-400 sm:hidden">{order.package_count} packet · {order.status}</p>
+      <div className="mt-5 space-y-6">
+        {groupedOrders.map((group) => {
+          const meta = orderStatusMeta[group.status];
+          return (
+            <div key={group.status} className="rounded-[1.5rem] border border-zinc-100 bg-zinc-50/50 p-3 sm:p-4">
+              <div className={['mb-3 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3', meta.headerClassName].join(' ')}>
+                <h3 className="text-sm font-black uppercase">{meta.label} Orders</h3>
+                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-black">{group.orders.length}</span>
               </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Phone</p>
-                <p className="truncate text-sm font-bold text-zinc-700">{order.phone}</p>
+
+              <div className="hidden rounded-2xl bg-white px-4 py-3 text-xs font-black uppercase text-zinc-500 sm:grid sm:grid-cols-[1fr_0.8fr_1.3fr_0.7fr_0.6fr_0.45fr] sm:gap-4">
+                <span>Name</span>
+                <span>Phone</span>
+                <span>Address</span>
+                <span>Status</span>
+                <span className="text-right">Amount</span>
+                <span className="text-right">Copy</span>
               </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Address</p>
-                <p className="line-clamp-2 text-sm font-semibold leading-6 text-zinc-600">{order.address}</p>
-              </div>
-              <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
-                <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Amount</p>
-                <p className="text-lg font-black text-offer-600">{order.total} tk</p>
-              </div>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={(event) => copyOrder(event, order)}
-                  className={[
-                    'inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl px-3 py-2 text-xs font-black transition',
-                    copiedOrderId === order.id
-                      ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100'
-                      : 'bg-orange-50 text-offer-700 ring-1 ring-orange-100 hover:bg-offer-600 hover:text-white',
-                  ].join(' ')}
-                  aria-label={`Copy order details for ${order.customer_name}`}
-                >
-                  {copiedOrderId === order.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  <span className="sm:hidden">{copiedOrderId === order.id ? 'Copied' : 'Copy details'}</span>
-                </button>
+
+              <div className="mt-3 space-y-3">
+                {group.orders.map((order) => (
+                  <div
+                    key={order.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedOrderId(order.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') setSelectedOrderId(order.id);
+                    }}
+                    className="block w-full rounded-3xl border border-zinc-100 bg-white p-4 text-left shadow-[0_10px_30px_rgba(20,18,15,0.04)] transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-orange-100"
+                  >
+                    <div className="grid min-w-0 gap-3 sm:grid-cols-[1fr_0.8fr_1.3fr_0.7fr_0.6fr_0.45fr] sm:items-center sm:gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Name</p>
+                        <p className="truncate text-base font-extrabold text-ink">{order.customer_name}</p>
+                        <p className="mt-1 text-xs font-bold text-zinc-400 sm:hidden">{order.package_count} packet</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Phone</p>
+                        <p className="truncate text-sm font-bold text-zinc-700">{order.phone}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Address</p>
+                        <p className="line-clamp-2 text-sm font-semibold leading-6 text-zinc-600">{order.address}</p>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 sm:block">
+                        <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Status</p>
+                        <StatusBadge status={order.status} />
+                      </div>
+                      <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
+                        <p className="text-[11px] font-black uppercase text-zinc-400 sm:hidden">Amount</p>
+                        <p className="text-lg font-black text-offer-600">{order.total} tk</p>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={(event) => copyOrder(event, order)}
+                          onKeyDown={(event) => event.stopPropagation()}
+                          className={[
+                            'inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl px-3 py-2 text-xs font-black transition',
+                            copiedOrderId === order.id
+                              ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100'
+                              : 'bg-orange-50 text-offer-700 ring-1 ring-orange-100 hover:bg-offer-600 hover:text-white',
+                          ].join(' ')}
+                          aria-label={`Copy order details for ${order.customer_name}`}
+                        >
+                          {copiedOrderId === order.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          <span className="sm:hidden">{copiedOrderId === order.id ? 'Copied' : 'Copy details'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+          );
+        })}
+
+        {statusFilter !== 'all' && !groupedOrders[0]?.orders.length ? (
+          <div className="rounded-3xl bg-zinc-50 py-12 text-center">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-zinc-400" />
+            <p className="mt-3 font-bold text-zinc-600">No {orderStatusMeta[statusFilter]?.label.toLowerCase()} orders.</p>
           </div>
-        ))}
+        ) : null}
 
         {!orders.length ? (
           <div className="py-12 text-center">
@@ -958,6 +1052,17 @@ function OrdersTable({ orders, onStatusChange, onCourierCheck }) {
         onCourierCheck={onCourierCheck}
       />
     </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const normalized = status || 'pending';
+  const meta = orderStatusMeta[normalized] || orderStatusMeta.pending;
+
+  return (
+    <span className={['inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-black ring-1', meta.className].join(' ')}>
+      {meta.label}
+    </span>
   );
 }
 
