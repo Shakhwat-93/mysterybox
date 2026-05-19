@@ -106,7 +106,10 @@ as $$
     updated_at = now()
   where public.orders.id = target_order_id
     and public.orders.courier_checked_at is null
-    and public.orders.courier_check_status <> 'checking'
+    and (
+      public.orders.courier_check_status <> 'checking'
+      or public.orders.updated_at < now() - interval '2 minutes'
+    )
   returning public.orders.id, public.orders.phone;
 $$;
 

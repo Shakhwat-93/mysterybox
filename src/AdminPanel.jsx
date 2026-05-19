@@ -185,7 +185,7 @@ function AdminPanel() {
     );
 
     if (!uncheckedOrders.length) return;
-    uncheckedOrders.slice(0, 8).forEach((order) => checkCourier(order.id));
+    uncheckedOrders.slice(0, 3).forEach((order) => checkCourier(order.id));
   }, [orders, session?.access_token, profile?.is_admin, courierCheckingIds]);
 
   const checkCourier = async (orderId) => {
@@ -200,7 +200,10 @@ function AdminPanel() {
       ),
     );
 
+    let timeout;
     try {
+      const controller = new AbortController();
+      timeout = window.setTimeout(() => controller.abort(), 14000);
       const response = await fetch('/api/courier-check', {
         method: 'POST',
         headers: {
@@ -208,7 +211,9 @@ function AdminPanel() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ orderId }),
+        signal: controller.signal,
       }).then((result) => result.json());
+      window.clearTimeout(timeout);
 
       if (response.order) {
         setOrders((current) =>
@@ -224,14 +229,16 @@ function AdminPanel() {
         );
       }
     } catch (error) {
+      const message = error.name === 'AbortError' ? 'Courier API response took too long.' : error.message;
       setOrders((current) =>
         current.map((order) =>
           order.id === orderId
-            ? { ...order, courier_check_status: 'error', courier_check_error: error.message }
+            ? { ...order, courier_check_status: 'error', courier_check_error: message }
             : order,
         ),
       );
     } finally {
+      if (timeout) window.clearTimeout(timeout);
       setCourierCheckingIds((current) => {
         const next = new Set(current);
         next.delete(orderId);
@@ -907,6 +914,7 @@ function CourierSummary({ order, onCourierCheck, detailed = false }) {
           <RefreshCw className="h-3.5 w-3.5 animate-spin" />
           Checking courier history...
         </span>
+        <p className="mt-1 text-[11px] text-orange-500">Normally 5-10 seconds. Slow hole auto error save hobe.</p>
       </div>
     );
   }

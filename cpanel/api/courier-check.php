@@ -9,6 +9,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_response(405, ['error' => 'Method not allowed']);
 }
 
+$orderId = '';
+$claimed = null;
+
 try {
     require_admin();
     $body = read_json_body();
@@ -42,7 +45,8 @@ try {
             'Authorization: Bearer ' . BDCOURIER_API_KEY,
         ],
         CURLOPT_POSTFIELDS => json_encode(['phone' => normalize_phone((string) ($claimed['phone'] ?? ''))], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        CURLOPT_TIMEOUT => 25,
+        CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_TIMEOUT => 10,
     ]);
 
     $raw = curl_exec($curl);
@@ -86,5 +90,20 @@ try {
         'error' => $success ? null : $payload['courier_check_error'],
     ]);
 } catch (Throwable $error) {
+    if (!empty($claimed['id'])) {
+        try {
+            supabase_request(
+                'PATCH',
+                'orders?id=eq.' . rawurlencode((string) $claimed['id']),
+                [
+                    'courier_check_status' => 'error',
+                    'courier_checked_at' => gmdate('c'),
+                    'courier_check_result' => null,
+                    'courier_check_error' => $error->getMessage(),
+                ]
+            );
+        } catch (Throwable $ignored) {
+        }
+    }
     json_response(500, ['ok' => false, 'error' => $error->getMessage()]);
 }

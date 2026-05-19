@@ -8,6 +8,9 @@ function normalizePhone(value) {
 
 export default async function handler(req, res) {
   setCors(res);
+  let supabase;
+  let orderId;
+  let claimed;
 
   if (req.method === 'OPTIONS') {
     res.status(204).end();
@@ -20,14 +23,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const supabase = createServiceClient();
+    supabase = createServiceClient();
     const admin = await requireAdmin(req, supabase);
     if (!admin.ok) {
       json(res, admin.status, { ok: false, error: admin.error });
       return;
     }
 
-    const orderId = req.body?.orderId;
+    orderId = req.body?.orderId;
     if (!orderId) {
       json(res, 400, { ok: false, error: 'Missing orderId.' });
       return;
@@ -39,7 +42,7 @@ export default async function handler(req, res) {
 
     if (claimError) throw claimError;
 
-    const claimed = claimedRows?.[0];
+    claimed = claimedRows?.[0];
     if (!claimed) {
       const { data: existing, error: existingError } = await supabase
         .from('orders')
@@ -62,6 +65,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ phone: normalizePhone(claimed.phone) }),
+      signal: AbortSignal.timeout(10000),
     });
 
     const result = await response.json().catch(() => ({}));
@@ -97,6 +101,17 @@ export default async function handler(req, res) {
       error: success ? undefined : updatePayload.courier_check_error,
     });
   } catch (error) {
+    if (supabase && claimed?.id) {
+      await supabase
+        .from('orders')
+        .update({
+          courier_check_status: 'error',
+          courier_checked_at: new Date().toISOString(),
+          courier_check_result: null,
+          courier_check_error: error.name === 'TimeoutError' ? 'Courier API response took too long.' : error.message,
+        })
+        .eq('id', claimed.id);
+    }
     json(res, 500, { ok: false, error: error.message });
   }
 }
