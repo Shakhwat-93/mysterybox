@@ -636,7 +636,7 @@ function CheckoutForm({
   return (
     <section
       id="checkout"
-      className="soft-reveal scroll-mt-20 rounded-[2rem] bg-white p-4 text-center shadow-premium ring-1 ring-orange-100 sm:p-6 lg:p-7 lg:text-left"
+      className="soft-reveal scroll-mt-20 rounded-[2rem] bg-white p-4 text-center shadow-premium ring-1 ring-orange-100 sm:p-6 lg:col-span-2 lg:mx-auto lg:w-full lg:max-w-5xl lg:p-7 lg:text-left"
     >
       <div className="mb-6 flex flex-col items-center gap-4 border-b border-zinc-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
