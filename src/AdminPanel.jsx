@@ -66,6 +66,14 @@ function normalizeMetaPixelId(value) {
   return (initMatch?.[1] || urlMatch?.[1] || plainMatch?.[0] || '').trim();
 }
 
+function normalizeTikTokPixelId(value) {
+  const text = String(value || '').trim();
+  const loadMatch = text.match(/ttq\.load\(\s*['"]([A-Z0-9]{8,40})['"]/i);
+  const sdkMatch = text.match(/[?&]sdkid=([A-Z0-9]{8,40})/i);
+  const plainMatch = text.match(/\b[A-Z0-9]{8,40}\b/i);
+  return (loadMatch?.[1] || sdkMatch?.[1] || plainMatch?.[0] || '').trim().toUpperCase();
+}
+
 const defaultPixelSettings = {
   id: 'main',
   meta_pixel_enabled: false,
@@ -75,6 +83,8 @@ const defaultPixelSettings = {
   meta_test_event_code: '',
   gtm_enabled: false,
   gtm_container_id: '',
+  tiktok_pixel_enabled: false,
+  tiktok_pixel_id: '',
 };
 
 const defaultCourierSettings = {
@@ -311,6 +321,7 @@ function AdminPanel() {
     setNotice('');
     const metaPixelId = normalizeMetaPixelId(pixelSettings.meta_pixel_id);
     const gtmContainerId = normalizeGtmContainerId(pixelSettings.gtm_container_id);
+    const tiktokPixelId = normalizeTikTokPixelId(pixelSettings.tiktok_pixel_id);
     const payload = {
       ...pixelSettings,
       id: 'main',
@@ -321,6 +332,8 @@ function AdminPanel() {
       meta_test_event_code: String(pixelSettings.meta_test_event_code || '').trim(),
       gtm_enabled: Boolean(pixelSettings.gtm_enabled || gtmContainerId),
       gtm_container_id: gtmContainerId,
+      tiktok_pixel_enabled: Boolean(pixelSettings.tiktok_pixel_enabled || tiktokPixelId),
+      tiktok_pixel_id: tiktokPixelId,
     };
     const { error } = await supabase.from('pixel_settings').upsert(payload);
     setSaving(false);
@@ -622,7 +635,7 @@ function PixelSetup({ settings, setSettings, onSave, saving }) {
         <p className="text-sm font-bold uppercase text-offer-600">Tracking</p>
         <h2 className="mt-2 text-2xl font-extrabold">Pixel Setup</h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-          Meta Pixel, Meta CAPI and GTM credentials save korle full website tracking active hobe. Access token browser-e expose hobe na.
+          Meta Pixel, Meta CAPI, GTM and TikTok Pixel credentials save korle full website tracking active hobe. Secret token browser-e expose hobe na.
         </p>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -655,6 +668,18 @@ function PixelSetup({ settings, setSettings, onSave, saving }) {
             value={settings.gtm_container_id}
             onChange={(value) => update('gtm_container_id', value)}
             placeholder="GTM-NT67SQ58 অথবা পুরো GTM script/noscript code paste করুন"
+            multiline
+          />
+          <ToggleField
+            label="Enable TikTok Pixel"
+            checked={settings.tiktok_pixel_enabled}
+            onChange={(value) => update('tiktok_pixel_enabled', value)}
+          />
+          <TextField
+            label="TikTok Pixel ID or Full TikTok Pixel Code"
+            value={settings.tiktok_pixel_id}
+            onChange={(value) => update('tiktok_pixel_id', value)}
+            placeholder="C123ABC... or full TikTok Pixel code"
             multiline
           />
         </div>

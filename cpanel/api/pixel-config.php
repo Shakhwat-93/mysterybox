@@ -12,11 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 try {
     $rows = supabase_request(
         'GET',
-        'pixel_settings?select=meta_pixel_enabled,meta_pixel_id,meta_capi_enabled,meta_access_token,gtm_enabled,gtm_container_id&id=eq.main'
+        'pixel_settings?select=meta_pixel_enabled,meta_pixel_id,meta_capi_enabled,meta_access_token,gtm_enabled,gtm_container_id,tiktok_pixel_enabled,tiktok_pixel_id&id=eq.main'
     );
     $settings = $rows[0] ?? [];
     $metaPixelId = normalize_meta_pixel_id($settings['meta_pixel_id'] ?? '');
     $gtmContainerId = normalize_gtm_container_id($settings['gtm_container_id'] ?? '');
+    $tiktokPixelId = normalize_tiktok_pixel_id($settings['tiktok_pixel_id'] ?? '');
 
     json_response(200, [
         'metaPixelEnabled' => (bool) (($settings['meta_pixel_enabled'] ?? false) && $metaPixelId),
@@ -24,6 +25,8 @@ try {
         'metaCapiEnabled' => (bool) (($settings['meta_capi_enabled'] ?? false) && $metaPixelId && ($settings['meta_access_token'] ?? '')),
         'gtmEnabled' => (bool) (($settings['gtm_enabled'] ?? false) && $gtmContainerId),
         'gtmContainerId' => $gtmContainerId,
+        'tiktokPixelEnabled' => (bool) (($settings['tiktok_pixel_enabled'] ?? false) && $tiktokPixelId),
+        'tiktokPixelId' => $tiktokPixelId,
     ]);
 } catch (Throwable $error) {
     json_response(200, [
@@ -32,6 +35,8 @@ try {
         'metaCapiEnabled' => false,
         'gtmEnabled' => false,
         'gtmContainerId' => '',
+        'tiktokPixelEnabled' => false,
+        'tiktokPixelId' => '',
         'error' => $error->getMessage(),
     ]);
 }

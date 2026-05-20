@@ -1,6 +1,7 @@
 let configPromise;
 let pixelInitialized = false;
 let gtmInitialized = false;
+let tiktokInitialized = false;
 let viewItemTracked = false;
 let beginCheckoutTracked = false;
 
@@ -33,6 +34,14 @@ function normalizeMetaPixelId(value) {
   const urlMatch = text.match(/facebook\.com\/tr\?id=(\d{6,30})/i);
   const plainMatch = text.match(/\b\d{6,30}\b/);
   return (initMatch?.[1] || urlMatch?.[1] || plainMatch?.[0] || '').trim();
+}
+
+function normalizeTikTokPixelId(value) {
+  const text = String(value || '').trim();
+  const loadMatch = text.match(/ttq\.load\(\s*['"]([A-Z0-9]{8,40})['"]/i);
+  const sdkMatch = text.match(/[?&]sdkid=([A-Z0-9]{8,40})/i);
+  const plainMatch = text.match(/\b[A-Z0-9]{8,40}\b/i);
+  return (loadMatch?.[1] || sdkMatch?.[1] || plainMatch?.[0] || '').trim().toUpperCase();
 }
 
 function injectGtmNoScript(containerId) {
@@ -86,9 +95,70 @@ function initGtm(containerId) {
   gtmInitialized = true;
 }
 
+function initTikTokPixel(pixelId) {
+  const normalizedPixelId = normalizeTikTokPixelId(pixelId);
+  if (!normalizedPixelId || tiktokInitialized) return;
+
+  /* eslint-disable */
+  !(function (w, d, t) {
+    w.TiktokAnalyticsObject = t;
+    var ttq = (w[t] = w[t] || []);
+    ttq.methods = [
+      'page',
+      'track',
+      'identify',
+      'instances',
+      'debug',
+      'on',
+      'off',
+      'once',
+      'ready',
+      'alias',
+      'group',
+      'enableCookie',
+      'disableCookie',
+      'holdConsent',
+      'revokeConsent',
+      'grantConsent',
+    ];
+    ttq.setAndDefer = function (t, e) {
+      t[e] = function () {
+        t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+      };
+    };
+    for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
+    ttq.instance = function (t) {
+      var e = ttq._i[t] || [];
+      for (var n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
+      return e;
+    };
+    ttq.load = function (e, n) {
+      var r = 'https://analytics.tiktok.com/i18n/pixel/events.js';
+      ttq._i = ttq._i || {};
+      ttq._i[e] = [];
+      ttq._i[e]._u = r;
+      ttq._t = ttq._t || {};
+      ttq._t[e] = +new Date();
+      ttq._o = ttq._o || {};
+      ttq._o[e] = n || {};
+      var s = d.createElement('script');
+      s.type = 'text/javascript';
+      s.async = true;
+      s.src = r + '?sdkid=' + e + '&lib=' + t;
+      var a = d.getElementsByTagName('script')[0];
+      a.parentNode.insertBefore(s, a);
+    };
+  })(window, document, 'ttq');
+  /* eslint-enable */
+
+  window.ttq.load(normalizedPixelId);
+  tiktokInitialized = true;
+}
+
 function ensureTrackingReady(config) {
   if (config?.gtmEnabled) initGtm(config.gtmContainerId);
   if (config?.metaPixelEnabled) initMetaPixel(config.metaPixelId);
+  if (config?.tiktokPixelEnabled) initTikTokPixel(config.tiktokPixelId);
 }
 
 export async function getPixelConfig() {
@@ -101,6 +171,8 @@ export async function getPixelConfig() {
         metaCapiEnabled: false,
         gtmEnabled: false,
         gtmContainerId: '',
+        tiktokPixelEnabled: false,
+        tiktokPixelId: '',
       }));
   }
 
@@ -115,6 +187,7 @@ export async function initializeTracking() {
 
   ensureTrackingReady(config);
   if (config.metaPixelEnabled && window.fbq) window.fbq('track', 'PageView');
+  if (config.tiktokPixelEnabled && window.ttq) window.ttq.page();
 
   return config;
 }
@@ -132,6 +205,18 @@ function buildItem({ packageCount, subtotal }) {
     price: Number(subtotal || 0),
     quantity: 1,
   };
+}
+
+function buildTikTokContents(item, packageCount) {
+  return [
+    {
+      content_id: item.item_id,
+      content_name: item.item_name,
+      content_category: item.item_category,
+      price: Number(item.price || 0),
+      quantity: Number(packageCount || 1),
+    },
+  ];
 }
 
 function normalizeCustomer(customer = {}) {
@@ -226,6 +311,15 @@ export async function trackViewItem({ packageCount, subtotal, total }) {
       content_type: 'product',
     });
   }
+
+  if (config.tiktokPixelEnabled && window.ttq) {
+    window.ttq.track('ViewContent', {
+      value: Number(total || subtotal || 0),
+      currency: 'BDT',
+      content_type: 'product',
+      contents: buildTikTokContents(item, packageCount),
+    });
+  }
 }
 
 export async function trackBeginCheckout({ packageCount, subtotal, deliveryCharge, total, customer, force = false }) {
@@ -260,6 +354,15 @@ export async function trackBeginCheckout({ packageCount, subtotal, deliveryCharg
       content_name: item.item_name,
       content_type: 'product',
       num_items: Number(packageCount || 0),
+    });
+  }
+
+  if (config.tiktokPixelEnabled && window.ttq) {
+    window.ttq.track('InitiateCheckout', {
+      value: Number(total || 0),
+      currency: 'BDT',
+      content_type: 'product',
+      contents: buildTikTokContents(item, packageCount),
     });
   }
 }
@@ -301,6 +404,20 @@ export async function trackPurchase({ eventId, orderId, packageCount, subtotal, 
 
   if (config.metaPixelEnabled && window.fbq) {
     window.fbq('track', 'Purchase', customData, { eventID: eventId });
+  }
+
+  if (config.tiktokPixelEnabled && window.ttq) {
+    window.ttq.track(
+      'CompletePayment',
+      {
+        value: Number(total || 0),
+        currency: 'BDT',
+        content_type: 'product',
+        contents: buildTikTokContents(item, packageCount),
+        order_id: orderId,
+      },
+      { event_id: eventId },
+    );
   }
 
   if (config.metaCapiEnabled) {

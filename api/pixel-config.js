@@ -13,6 +13,14 @@ function normalizeMetaPixelId(value) {
   return (initMatch?.[1] || urlMatch?.[1] || plainMatch?.[0] || '').trim();
 }
 
+function normalizeTikTokPixelId(value) {
+  const text = String(value || '').trim();
+  const loadMatch = text.match(/ttq\.load\(\s*['"]([A-Z0-9]{8,40})['"]/i);
+  const sdkMatch = text.match(/[?&]sdkid=([A-Z0-9]{8,40})/i);
+  const plainMatch = text.match(/\b[A-Z0-9]{8,40}\b/i);
+  return (loadMatch?.[1] || sdkMatch?.[1] || plainMatch?.[0] || '').trim().toUpperCase();
+}
+
 export default async function handler(req, res) {
   setCors(res);
 
@@ -30,7 +38,7 @@ export default async function handler(req, res) {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from('pixel_settings')
-      .select('meta_pixel_enabled,meta_pixel_id,meta_capi_enabled,meta_access_token,gtm_enabled,gtm_container_id')
+      .select('meta_pixel_enabled,meta_pixel_id,meta_capi_enabled,meta_access_token,gtm_enabled,gtm_container_id,tiktok_pixel_enabled,tiktok_pixel_id')
       .eq('id', 'main')
       .maybeSingle();
 
@@ -38,6 +46,7 @@ export default async function handler(req, res) {
 
     const metaPixelId = normalizeMetaPixelId(data?.meta_pixel_id);
     const gtmContainerId = normalizeGtmContainerId(data?.gtm_container_id);
+    const tiktokPixelId = normalizeTikTokPixelId(data?.tiktok_pixel_id);
 
     json(res, 200, {
       metaPixelEnabled: Boolean(data?.meta_pixel_enabled && metaPixelId),
@@ -45,6 +54,8 @@ export default async function handler(req, res) {
       metaCapiEnabled: Boolean(data?.meta_capi_enabled && metaPixelId && data?.meta_access_token),
       gtmEnabled: Boolean(data?.gtm_enabled && gtmContainerId),
       gtmContainerId,
+      tiktokPixelEnabled: Boolean(data?.tiktok_pixel_enabled && tiktokPixelId),
+      tiktokPixelId,
     });
   } catch (error) {
     json(res, 200, {
@@ -53,6 +64,8 @@ export default async function handler(req, res) {
       metaCapiEnabled: false,
       gtmEnabled: false,
       gtmContainerId: '',
+      tiktokPixelEnabled: false,
+      tiktokPixelId: '',
       error: error.message,
     });
   }

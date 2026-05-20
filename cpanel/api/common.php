@@ -173,6 +173,21 @@ function normalize_gtm_container_id(?string $value): string
     return '';
 }
 
+function normalize_tiktok_pixel_id(?string $value): string
+{
+    $text = trim((string) $value);
+    if (preg_match('/ttq\.load\(\s*[\'"]([A-Z0-9]{8,40})[\'"]/i', $text, $match)) {
+        return strtoupper($match[1]);
+    }
+    if (preg_match('/[?&]sdkid=([A-Z0-9]{8,40})/i', $text, $match)) {
+        return strtoupper($match[1]);
+    }
+    if (preg_match('/\b[A-Z0-9]{8,40}\b/i', $text, $match)) {
+        return strtoupper($match[0]);
+    }
+    return '';
+}
+
 function normalize_phone(?string $value): string
 {
     return preg_replace('/[\s-]+/', '', (string) $value) ?? '';
