@@ -22,7 +22,7 @@ Premium Bangla-first React landing page for a Daraz Mystery Box flash offer.
 - Dedicated order success page
 - Supabase-backed content, order, and stock management
 - Admin panel at `/admin`
-- Admin-managed Meta Pixel, GTM, TikTok Pixel, and Meta CAPI tracking setup
+- Admin-managed Meta Pixel, Meta CAPI, GTM, TikTok Pixel, and TikTok Events API setup
 - Server-side duplicate order guard by device/IP with admin-adjustable block days
 - One-time cached courier history check for each order in the admin panel
 - Vercel-ready build setup

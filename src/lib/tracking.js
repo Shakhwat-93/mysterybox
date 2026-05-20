@@ -173,16 +173,50 @@ export async function getPixelConfig() {
         gtmContainerId: '',
         tiktokPixelEnabled: false,
         tiktokPixelId: '',
+        tiktokEventsEnabled: false,
       }));
   }
 
   return configPromise;
 }
 
+function getCookie(name) {
+  return document.cookie
+    .split(';')
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(`${name}=`))
+    ?.slice(name.length + 1) || '';
+}
+
+function rememberTikTokClickId() {
+  const ttclid = new URLSearchParams(window.location.search).get('ttclid');
+  if (ttclid) window.localStorage?.setItem('ttclid', ttclid);
+  return ttclid || window.localStorage?.getItem('ttclid') || '';
+}
+
+function sendTikTokEventsApi({ eventName, eventId, properties, customer }) {
+  fetch('/api/tiktok-events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      eventName,
+      eventId,
+      eventSourceUrl: window.location.href,
+      referrer: document.referrer,
+      properties,
+      customer,
+      ttp: getCookie('_ttp'),
+      ttclid: rememberTikTokClickId(),
+    }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
 export async function initializeTracking() {
   if (typeof window === 'undefined' || isAdminRoute()) return null;
 
   window.dataLayer = window.dataLayer || [];
+  rememberTikTokClickId();
   const config = await getPixelConfig();
 
   ensureTrackingReady(config);
@@ -295,6 +329,13 @@ export async function trackViewItem({ packageCount, subtotal, total }) {
   const config = await getPixelConfig();
   ensureTrackingReady(config);
   const item = buildItem({ packageCount, subtotal });
+  const eventId = createEventId('view_content');
+  const tiktokProperties = {
+    value: Number(total || subtotal || 0),
+    currency: 'BDT',
+    content_type: 'product',
+    contents: buildTikTokContents(item, packageCount),
+  };
 
   pushEcommerceEvent('view_item', {
     currency: 'BDT',
@@ -313,12 +354,11 @@ export async function trackViewItem({ packageCount, subtotal, total }) {
   }
 
   if (config.tiktokPixelEnabled && window.ttq) {
-    window.ttq.track('ViewContent', {
-      value: Number(total || subtotal || 0),
-      currency: 'BDT',
-      content_type: 'product',
-      contents: buildTikTokContents(item, packageCount),
-    });
+    window.ttq.track('ViewContent', tiktokProperties, { event_id: eventId });
+  }
+
+  if (config.tiktokEventsEnabled) {
+    sendTikTokEventsApi({ eventName: 'ViewContent', eventId, properties: tiktokProperties });
   }
 }
 
@@ -331,6 +371,13 @@ export async function trackBeginCheckout({ packageCount, subtotal, deliveryCharg
   const item = buildItem({ packageCount, subtotal });
   const customerDetails = normalizeCustomer(customer);
   const userData = await buildUserData(customer);
+  const eventId = createEventId('begin_checkout');
+  const tiktokProperties = {
+    value: Number(total || 0),
+    currency: 'BDT',
+    content_type: 'product',
+    contents: buildTikTokContents(item, packageCount),
+  };
 
   pushEcommerceEvent(
     'begin_checkout',
@@ -358,12 +405,11 @@ export async function trackBeginCheckout({ packageCount, subtotal, deliveryCharg
   }
 
   if (config.tiktokPixelEnabled && window.ttq) {
-    window.ttq.track('InitiateCheckout', {
-      value: Number(total || 0),
-      currency: 'BDT',
-      content_type: 'product',
-      contents: buildTikTokContents(item, packageCount),
-    });
+    window.ttq.track('InitiateCheckout', tiktokProperties, { event_id: eventId });
+  }
+
+  if (config.tiktokEventsEnabled) {
+    sendTikTokEventsApi({ eventName: 'InitiateCheckout', eventId, properties: tiktokProperties, customer });
   }
 }
 
@@ -382,6 +428,13 @@ export async function trackPurchase({ eventId, orderId, packageCount, subtotal, 
     content_name: item.item_name,
     content_type: 'product',
     num_items: Number(packageCount || 0),
+    order_id: orderId,
+  };
+  const tiktokProperties = {
+    value: Number(total || 0),
+    currency: 'BDT',
+    content_type: 'product',
+    contents: buildTikTokContents(item, packageCount),
     order_id: orderId,
   };
 
@@ -407,17 +460,11 @@ export async function trackPurchase({ eventId, orderId, packageCount, subtotal, 
   }
 
   if (config.tiktokPixelEnabled && window.ttq) {
-    window.ttq.track(
-      'CompletePayment',
-      {
-        value: Number(total || 0),
-        currency: 'BDT',
-        content_type: 'product',
-        contents: buildTikTokContents(item, packageCount),
-        order_id: orderId,
-      },
-      { event_id: eventId },
-    );
+    window.ttq.track('CompletePayment', tiktokProperties, { event_id: eventId });
+  }
+
+  if (config.tiktokEventsEnabled) {
+    sendTikTokEventsApi({ eventName: 'CompletePayment', eventId, properties: tiktokProperties, customer });
   }
 
   if (config.metaCapiEnabled) {

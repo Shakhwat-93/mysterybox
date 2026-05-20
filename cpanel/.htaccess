@@ -5,6 +5,7 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 RewriteRule ^api/pixel-config/?$ api/pixel-config.php [L,QSA]
 RewriteRule ^api/create-order/?$ api/create-order.php [L,QSA]
 RewriteRule ^api/meta-capi/?$ api/meta-capi.php [L,QSA]
+RewriteRule ^api/tiktok-events/?$ api/tiktok-events.php [L,QSA]
 RewriteRule ^api/courier-check/?$ api/courier-check.php [L,QSA]
 
 <FilesMatch "^(config|common)\.php$">

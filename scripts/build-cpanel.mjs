@@ -102,7 +102,7 @@ await fs.writeFile(
   [
     'Upload everything inside this folder to cPanel public_html, or upload the zip and extract it in public_html.',
     'Required cPanel features: Apache .htaccess rewrite support and PHP with cURL enabled.',
-    'Do not move the api folder. The React app calls /api/create-order, /api/pixel-config, and /api/meta-capi.',
+    'Do not move the api folder. The React app calls /api/create-order, /api/pixel-config, /api/meta-capi, and /api/tiktok-events.',
     'Courier check calls /api/courier-check and stores each order result once in Supabase.',
     'BDCourier API key can be saved from Admin > Courier Setup. The generated config key is only a fallback.',
     '',

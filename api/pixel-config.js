@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from('pixel_settings')
-      .select('meta_pixel_enabled,meta_pixel_id,meta_capi_enabled,meta_access_token,gtm_enabled,gtm_container_id,tiktok_pixel_enabled,tiktok_pixel_id')
+      .select('meta_pixel_enabled,meta_pixel_id,meta_capi_enabled,meta_access_token,gtm_enabled,gtm_container_id,tiktok_pixel_enabled,tiktok_pixel_id,tiktok_events_enabled,tiktok_access_token')
       .eq('id', 'main')
       .maybeSingle();
 
@@ -56,6 +56,7 @@ export default async function handler(req, res) {
       gtmContainerId,
       tiktokPixelEnabled: Boolean(data?.tiktok_pixel_enabled && tiktokPixelId),
       tiktokPixelId,
+      tiktokEventsEnabled: Boolean(data?.tiktok_events_enabled && tiktokPixelId && data?.tiktok_access_token),
     });
   } catch (error) {
     json(res, 200, {
@@ -66,6 +67,7 @@ export default async function handler(req, res) {
       gtmContainerId: '',
       tiktokPixelEnabled: false,
       tiktokPixelId: '',
+      tiktokEventsEnabled: false,
       error: error.message,
     });
   }

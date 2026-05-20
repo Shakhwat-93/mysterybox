@@ -68,6 +68,9 @@ create table if not exists public.pixel_settings (
   gtm_container_id text not null default '',
   tiktok_pixel_enabled boolean not null default false,
   tiktok_pixel_id text not null default '',
+  tiktok_events_enabled boolean not null default false,
+  tiktok_access_token text not null default '',
+  tiktok_test_event_code text not null default '',
   updated_at timestamptz not null default now()
 );
 

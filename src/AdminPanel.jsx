@@ -85,6 +85,9 @@ const defaultPixelSettings = {
   gtm_container_id: '',
   tiktok_pixel_enabled: false,
   tiktok_pixel_id: '',
+  tiktok_events_enabled: false,
+  tiktok_access_token: '',
+  tiktok_test_event_code: '',
 };
 
 const defaultCourierSettings = {
@@ -334,6 +337,9 @@ function AdminPanel() {
       gtm_container_id: gtmContainerId,
       tiktok_pixel_enabled: Boolean(pixelSettings.tiktok_pixel_enabled || tiktokPixelId),
       tiktok_pixel_id: tiktokPixelId,
+      tiktok_events_enabled: Boolean(pixelSettings.tiktok_events_enabled || (tiktokPixelId && pixelSettings.tiktok_access_token)),
+      tiktok_access_token: String(pixelSettings.tiktok_access_token || '').trim(),
+      tiktok_test_event_code: String(pixelSettings.tiktok_test_event_code || '').trim(),
     };
     const { error } = await supabase.from('pixel_settings').upsert(payload);
     setSaving(false);
@@ -675,12 +681,30 @@ function PixelSetup({ settings, setSettings, onSave, saving }) {
             checked={settings.tiktok_pixel_enabled}
             onChange={(value) => update('tiktok_pixel_enabled', value)}
           />
+          <ToggleField
+            label="Enable TikTok Events API"
+            checked={settings.tiktok_events_enabled}
+            onChange={(value) => update('tiktok_events_enabled', value)}
+          />
           <TextField
             label="TikTok Pixel ID or Full TikTok Pixel Code"
             value={settings.tiktok_pixel_id}
             onChange={(value) => update('tiktok_pixel_id', value)}
             placeholder="C123ABC... or full TikTok Pixel code"
             multiline
+          />
+          <TextField
+            label="TikTok Events API Access Token"
+            type="password"
+            value={settings.tiktok_access_token}
+            onChange={(value) => update('tiktok_access_token', value)}
+            placeholder="Paste TikTok Events API access token"
+          />
+          <TextField
+            label="TikTok Test Event Code"
+            value={settings.tiktok_test_event_code}
+            onChange={(value) => update('tiktok_test_event_code', value)}
+            placeholder="Optional test_event_code from TikTok Events Manager"
           />
         </div>
 
